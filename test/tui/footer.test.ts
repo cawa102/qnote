@@ -36,8 +36,14 @@ describe('getHintsForScreen', () => {
     expect(hints).toContain('Esc');
   });
 
+  it('returns findFile hints', () => {
+    const hints = getHintsForScreen('findFile');
+    expect(hints).toContain('Enter');
+    expect(hints).toContain('Esc');
+  });
+
   it('returns a string for every screen name', () => {
-    const screens: readonly ScreenName[] = ['palette', 'noteList', 'notePreview', 'search', 'capture'];
+    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture'];
     for (const screen of screens) {
       const hints = getHintsForScreen(screen);
       expect(typeof hints).toBe('string');
@@ -58,7 +64,7 @@ describe('Footer component', () => {
   });
 
   it('renders different hints for each screen', () => {
-    const screens: ScreenName[] = ['noteList', 'notePreview', 'search', 'capture'];
+    const screens: ScreenName[] = ['findFile', 'noteList', 'notePreview', 'search', 'capture'];
     for (const screen of screens) {
       const { lastFrame, unmount } = render(React.createElement(Footer, { screen }));
       const expected = getHintsForScreen(screen);

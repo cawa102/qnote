@@ -56,8 +56,8 @@ describe('CommandPalette input integration', () => {
     await delay(50);
 
     const frameAfter = lastFrame();
-    // 'search' should now have the selected indicator
-    expect(frameAfter).toMatch(/● search/);
+    // 'find file' should now have the selected indicator (index 1)
+    expect(frameAfter).toMatch(/● find file/);
   });
 
   it('arrow keys work after typing and deleting text (BUG REPRO)', async () => {
@@ -89,19 +89,19 @@ describe('CommandPalette input integration', () => {
     expect(frameAfterDelete).toContain('new note');
     expect(frameAfterDelete).toContain('daily');
 
-    // Press down arrow to move to 'search'
+    // Press down arrow to move to 'find file'
     stdin.write(ARROW_DOWN);
     await delay(50);
 
     const frame1 = lastFrame();
-    expect(frame1).toMatch(/● search/);
+    expect(frame1).toMatch(/● find file/);
 
-    // Press down arrow again to move to 'daily'
+    // Press down arrow again to move to 'search'
     stdin.write(ARROW_DOWN);
     await delay(50);
 
     const frame2 = lastFrame();
-    expect(frame2).toMatch(/● daily/);
+    expect(frame2).toMatch(/● search/);
   });
 
   it('arrow keys work after typing 3 chars and deleting 3', async () => {
@@ -129,7 +129,7 @@ describe('CommandPalette input integration', () => {
     await delay(50);
 
     const frame = lastFrame();
-    expect(frame).toMatch(/● search/);
+    expect(frame).toMatch(/● find file/);
   });
 
   it('arrow up works after typing and deleting', async () => {
@@ -142,8 +142,8 @@ describe('CommandPalette input integration', () => {
     stdin.write(ARROW_DOWN);
     await delay(50);
 
-    // Should be on 'daily'
-    expect(lastFrame()).toMatch(/● daily/);
+    // Should be on 'search' (index 2: new note, find file, search)
+    expect(lastFrame()).toMatch(/● search/);
 
     // Type something and delete
     stdin.write('x');

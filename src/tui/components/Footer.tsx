@@ -4,6 +4,7 @@ import type { ScreenName } from '../../types.js';
 
 const HINTS: Readonly<Record<ScreenName, string>> = {
   palette: 'Enter select   Esc quit',
+  findFile: '↑↓ select   Enter open   Esc cancel',
   noteList: ': cmd   / search   n new   q quit',
   notePreview: 'e edit   p raw   : cmd   Esc back',
   search: '↑↓ select   Enter open   Esc cancel',

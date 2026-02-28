@@ -17,7 +17,8 @@ export interface PaletteCommand {
 
 export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
   { label: 'new note', description: 'ノート作成', action: 'new' },
-  { label: 'search', description: '全文検索', action: 'search' },
+  { label: 'find file', description: 'ファイル名で検索', action: 'findFile' },
+  { label: 'search', description: '本文の全文検索', action: 'search' },
   { label: 'daily', description: 'デイリーノート', action: 'daily' },
   { label: 'recent', description: '最近のノート', action: 'recent' },
   { label: 'capture', description: 'クイックメモ', action: 'capture' },
