@@ -29,22 +29,13 @@ exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 25×15
 
 exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 40×20 compact — shows plain text (columns < 60) 1`] = `"Queen Note"`;
 
-exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 80×24 standard — shows block art title 1`] = `
-"▄▄▄▄  █  █ █▀▀▀ █▀▀▀ █▄  █
-█  █  █  █ █    █    █ █ █
-█  █  █  █ █▀▀  █▀▀  █  ██
-█ ▄█  █  █ █    █    █  ▀█
-▀▄▄█  ▀▄▄▀ ▀▀▀▀ ▀▀▀▀ ▀   ▀
-
-N O T E"
-`;
+exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 80×24 standard — shows plain text (contentWidth 72 < title width 83) 1`] = `"Queen Note"`;
 
 exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 120×40 wide — shows block art title 1`] = `
-"▄▄▄▄  █  █ █▀▀▀ █▀▀▀ █▄  █
-█  █  █  █ █    █    █ █ █
-█  █  █  █ █▀▀  █▀▀  █  ██
-█ ▄█  █  █ █    █    █  ▀█
-▀▄▄█  ▀▄▄▀ ▀▀▀▀ ▀▀▀▀ ▀   ▀
-
-N O T E"
+" ██████╗ ██╗   ██╗███████╗███████╗███╗   ██╗   ███╗   ██╗ ██████╗ ████████╗███████╗
+██╔═══██╗██║   ██║██╔════╝██╔════╝████╗  ██║   ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
+██║   ██║██║   ██║█████╗  █████╗  ██╔██╗ ██║   ██╔██╗ ██║██║   ██║   ██║   █████╗
+██║▄▄ ██║██║   ██║██╔══╝  ██╔══╝  ██║╚██╗██║   ██║╚██╗██║██║   ██║   ██║   ██╔══╝
+╚██████╔╝╚██████╔╝███████╗███████╗██║ ╚████║   ██║ ╚████║╚██████╔╝   ██║   ███████╗
+ ╚══▀▀═╝  ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═══╝   ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝"
 `;

@@ -209,7 +209,7 @@ describe('Layout Snapshots', () => {
   });
 
   describe('TitleBanner snapshots at each terminal size', () => {
-    it('80×24 standard — shows block art title', () => {
+    it('80×24 standard — shows plain text (contentWidth 72 < title width 83)', () => {
       const layout = makeLayout({ columns: 80, rows: 24 });
 
       const { lastFrame } = render(
@@ -220,8 +220,8 @@ describe('Layout Snapshots', () => {
       );
 
       const frame = lastFrame()!;
-      expect(frame).toMatch(/[█▀▄▌▐]/);
-      expect(frame).toContain('N O T E');
+      expect(frame).toContain('Queen Note');
+      expect(frame).not.toMatch(/[╗╔║╚╝═]/);
       expect(frame).toMatchSnapshot();
     });
 
@@ -253,7 +253,7 @@ describe('Layout Snapshots', () => {
 
       const frame = lastFrame()!;
       expect(frame).toMatch(/[█▀▄▌▐]/);
-      expect(frame).toContain('N O T E');
+      expect(frame).toMatch(/[╗╔║╚╝═]/);
       expect(frame).toMatchSnapshot();
     });
 

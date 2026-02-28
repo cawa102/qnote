@@ -17,7 +17,8 @@ describe('CenteredLayout integration', () => {
     });
 
     it('imports LayoutProvider', () => {
-      expect(source).toContain("import { LayoutProvider }");
+      expect(source).toContain("LayoutProvider");
+      expect(source).toContain("from './hooks/layout-context.js'");
     });
 
     it('wraps screen content in CenteredLayout', () => {

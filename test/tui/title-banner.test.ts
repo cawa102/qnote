@@ -17,10 +17,8 @@ describe('TitleBanner', () => {
       }),
     );
     const output = lastFrame();
-    // Block art should contain block characters
-    expect(output).toMatch(/[█▀▄▌▐]/);
-    // Should also contain the subtitle
-    expect(output).toContain('N O T E');
+    // Block art should contain block/box-drawing characters
+    expect(output).toMatch(/[█╗╔║╚╝═▄▀]/);
   });
 
   it('renders plain text "Queen Note" when showTitleArt=false', () => {
@@ -48,7 +46,7 @@ describe('TitleBanner', () => {
     expect(output).not.toMatch(/[█▀▄▌▐]/);
   });
 
-  it('title text is present in output when showing art', () => {
+  it('art contains box-drawing characters for 3D effect', () => {
     const { lastFrame } = render(
       React.createElement(TitleBanner, {
         contentWidth: TITLE_WIDTH + 10,
@@ -56,8 +54,8 @@ describe('TitleBanner', () => {
       }),
     );
     const output = lastFrame();
-    // At minimum, the subtitle "N O T E" should be present
-    expect(output).toContain('N O T E');
+    // Art should contain box-drawing characters (╗ ╔ ║ ═ etc.)
+    expect(output).toMatch(/[╗╔║╚╝═]/);
   });
 
   it('title text is present in output when showing plain', () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { TITLE_ART, TITLE_SUBTITLE, TITLE_WIDTH, colorizeTitle } from '../assets/title-art.js';
+import { TITLE_ART, TITLE_WIDTH, colorizeTitle } from '../assets/title-art.js';
 import { theme } from '../../theme/colors.js';
 
 interface TitleBannerProps {
@@ -17,7 +17,7 @@ function PlainTitle(): React.ReactElement {
 }
 
 function ArtTitle(): React.ReactElement {
-  const colored = colorizeTitle(TITLE_ART, TITLE_SUBTITLE);
+  const colored = colorizeTitle(TITLE_ART);
   return (
     <Box flexDirection="column">
       <Text>{colored}</Text>

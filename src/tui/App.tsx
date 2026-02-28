@@ -5,7 +5,7 @@ import { createInputModeStore } from './hooks/use-input-mode.js';
 import { useGlobalKeys } from './hooks/use-global-keys.js';
 import { Footer } from './components/Footer.js';
 import { CenteredLayout } from './components/CenteredLayout.js';
-import { LayoutProvider } from './hooks/layout-context.js';
+import { LayoutProvider, useLayoutContext } from './hooks/layout-context.js';
 import { CommandPalette } from './screens/CommandPalette.js';
 import { NoteList } from './screens/NoteList.js';
 import { NotePreview } from './screens/NotePreview.js';
@@ -25,12 +25,22 @@ interface AppProps {
 const navStore = createNavigationStore();
 const inputModeStore = createInputModeStore();
 
-export function App({
+export function App(props: AppProps): React.ReactElement {
+  return (
+    <LayoutProvider>
+      <AppContent {...props} />
+    </LayoutProvider>
+  );
+}
+
+function AppContent({
   noteService,
   searchIndex,
   captureDir,
   onRequestEditor,
 }: AppProps): React.ReactElement {
+  const { rows } = useLayoutContext();
+
   const currentEntry = useSyncExternalStore(
     (cb) => navStore.subscribe(cb),
     () => navStore.current(),
@@ -179,59 +189,59 @@ export function App({
       : 0;
 
   return (
-    <LayoutProvider>
-    <Box flexDirection="column" width="100%">
-      <CenteredLayout>
-        <Box flexDirection="column" flexGrow={1}>
-          {currentEntry.screen === 'palette' && (
-            <CommandPalette
-              nav={navStore}
-              onAction={handleAction}
-            />
-          )}
+    <Box flexDirection="column" width="100%" height={rows}>
+      <Box flexDirection="column" flexGrow={1} justifyContent="center">
+        <CenteredLayout>
+          <Box flexDirection="column">
+            {currentEntry.screen === 'palette' && (
+              <CommandPalette
+                nav={navStore}
+                onAction={handleAction}
+              />
+            )}
 
-          {currentEntry.screen === 'noteList' && (
-            <NoteList
-              title={noteListTitle}
-              items={noteListItems}
-              nav={navStore}
-            />
-          )}
+            {currentEntry.screen === 'noteList' && (
+              <NoteList
+                title={noteListTitle}
+                items={noteListItems}
+                nav={navStore}
+              />
+            )}
 
-          {currentEntry.screen === 'notePreview' && previewNote !== null && (
-            <NotePreview
-              note={previewNote}
-              backlinkCount={backlinkCount}
-              nav={navStore}
-              noteService={noteService}
-              onEdit={handleEdit}
-            />
-          )}
+            {currentEntry.screen === 'notePreview' && previewNote !== null && (
+              <NotePreview
+                note={previewNote}
+                backlinkCount={backlinkCount}
+                nav={navStore}
+                noteService={noteService}
+                onEdit={handleEdit}
+              />
+            )}
 
-          {currentEntry.screen === 'search' && (
-            <SearchScreen
-              noteService={noteService}
-              searchIndex={searchIndex}
-              nav={navStore}
-              inputMode={inputModeStore}
-            />
-          )}
+            {currentEntry.screen === 'search' && (
+              <SearchScreen
+                noteService={noteService}
+                searchIndex={searchIndex}
+                nav={navStore}
+                inputMode={inputModeStore}
+              />
+            )}
 
-          {currentEntry.screen === 'capture' && (
-            <CaptureScreen
-              noteService={noteService}
-              nav={navStore}
-              inputMode={inputModeStore}
-              captureDir={captureDir}
-              onSpawnEditor={handleSpawnEditor}
-            />
-          )}
-        </Box>
-      </CenteredLayout>
+            {currentEntry.screen === 'capture' && (
+              <CaptureScreen
+                noteService={noteService}
+                nav={navStore}
+                inputMode={inputModeStore}
+                captureDir={captureDir}
+                onSpawnEditor={handleSpawnEditor}
+              />
+            )}
+          </Box>
+        </CenteredLayout>
+      </Box>
       <CenteredLayout>
         <Footer screen={currentEntry.screen} />
       </CenteredLayout>
     </Box>
-    </LayoutProvider>
   );
 }
