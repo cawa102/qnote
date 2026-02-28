@@ -12,6 +12,7 @@ import { NotePreview } from './screens/NotePreview.js';
 import { SearchScreen } from './screens/SearchScreen.js';
 import { CaptureScreen } from './screens/CaptureScreen.js';
 import { EditorScreen } from './screens/EditorScreen.js';
+import { FindFileScreen } from './screens/FindFileScreen.js';
 import type { NoteService } from '../core/note-service.js';
 import type { SearchIndex } from '../storage/search-index.js';
 import type { Note, NoteListItem } from '../types.js';
@@ -88,6 +89,10 @@ function AppContent({
           navStore.push('noteList');
           break;
         }
+
+        case 'findFile':
+          navStore.push('findFile');
+          break;
 
         case 'search':
           navStore.push('search');
@@ -193,6 +198,14 @@ function AppContent({
                 backlinkCount={backlinkCount}
                 nav={navStore}
                 noteService={noteService}
+              />
+            )}
+
+            {currentEntry.screen === 'findFile' && (
+              <FindFileScreen
+                notesDir={notesDir}
+                nav={navStore}
+                inputMode={inputModeStore}
               />
             )}
 
