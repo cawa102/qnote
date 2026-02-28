@@ -134,12 +134,13 @@ export interface BackLink {
 
 // --- Navigation (discriminated union) ---
 
-export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'search' | 'capture' | 'editor';
+export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor';
 
 export type ScreenEntry =
   | { readonly screen: 'palette' }
   | { readonly screen: 'noteList'; readonly filter?: string; readonly tag?: string }
   | { readonly screen: 'notePreview'; readonly filePath: string }
+  | { readonly screen: 'findFile' }
   | { readonly screen: 'search'; readonly initialQuery?: string }
   | { readonly screen: 'capture' }
   | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean };
