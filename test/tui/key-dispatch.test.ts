@@ -6,7 +6,6 @@ import { createInputModeStore } from '../../src/tui/hooks/use-input-mode.js';
 function createOptions(overrides: {
   currentScreen?: string;
   mode?: 'navigation' | 'text';
-  onRequestEditor?: (filePath: string) => void;
   currentFilePath?: string;
 } = {}) {
   const nav = createNavigationStore();
@@ -25,6 +24,8 @@ function createOptions(overrides: {
     nav.push('search');
   } else if (overrides.currentScreen === 'capture') {
     nav.push('capture');
+  } else if (overrides.currentScreen === 'editor') {
+    nav.push('editor', { filePath: '/notes/test.md' });
   }
 
   return {
@@ -32,7 +33,6 @@ function createOptions(overrides: {
     inputMode,
     exit,
     currentScreen: overrides.currentScreen ?? 'palette',
-    onRequestEditor: overrides.onRequestEditor,
     currentFilePath: overrides.currentFilePath,
   };
 }
@@ -40,8 +40,6 @@ function createOptions(overrides: {
 describe('dispatchGlobalKey', () => {
   describe('Esc key', () => {
     it('calls exit when at root (stack depth 1)', () => {
-      const opts = createOptions();
-      // Reset to root only (palette)
       const nav = createNavigationStore();
       const exit = vi.fn();
 
@@ -71,6 +69,17 @@ describe('dispatchGlobalKey', () => {
 
       // Esc should still work in text mode — it pops
       expect(opts.nav.current().screen).not.toBe('search');
+    });
+
+    it('does not handle Esc on editor screen (EditorScreen handles its own)', () => {
+      const opts = createOptions({ currentScreen: 'editor' });
+      const depthBefore = opts.nav.stackDepth();
+
+      dispatchGlobalKey('', { escape: true }, opts);
+
+      // Esc should NOT pop — EditorScreen handles its own Esc
+      expect(opts.nav.stackDepth()).toBe(depthBefore);
+      expect(opts.exit).not.toHaveBeenCalled();
     });
   });
 
@@ -140,51 +149,51 @@ describe('dispatchGlobalKey', () => {
     });
   });
 
-  describe('e key — onRequestEditor', () => {
-    it('calls onRequestEditor with filePath when on notePreview', () => {
-      const onRequestEditor = vi.fn();
+  describe('e key — opens built-in editor', () => {
+    it('pushes editor screen with filePath when on notePreview', () => {
       const opts = createOptions({
         currentScreen: 'notePreview',
-        onRequestEditor,
         currentFilePath: '/notes/my-note.md',
       });
 
       dispatchGlobalKey('e', { escape: false }, opts);
 
-      expect(onRequestEditor).toHaveBeenCalledWith('/notes/my-note.md');
+      const entry = opts.nav.current();
+      expect(entry.screen).toBe('editor');
+      if (entry.screen === 'editor') {
+        expect(entry.filePath).toBe('/notes/my-note.md');
+      }
     });
 
-    it('does not call onRequestEditor when not on notePreview', () => {
-      const onRequestEditor = vi.fn();
-      const opts = createOptions({
-        currentScreen: 'noteList',
-        onRequestEditor,
-      });
+    it('does not push editor when not on notePreview', () => {
+      const opts = createOptions({ currentScreen: 'noteList' });
+      const depthBefore = opts.nav.stackDepth();
 
       dispatchGlobalKey('e', { escape: false }, opts);
 
-      expect(onRequestEditor).not.toHaveBeenCalled();
+      expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
 
-    it('does not error when onRequestEditor is undefined', () => {
+    it('does not push editor when currentFilePath is undefined', () => {
       const opts = createOptions({ currentScreen: 'notePreview' });
+      const depthBefore = opts.nav.stackDepth();
 
-      expect(() => {
-        dispatchGlobalKey('e', { escape: false }, opts);
-      }).not.toThrow();
+      dispatchGlobalKey('e', { escape: false }, opts);
+
+      expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
 
     it('is ignored in text mode', () => {
-      const onRequestEditor = vi.fn();
       const opts = createOptions({
         currentScreen: 'notePreview',
-        onRequestEditor,
+        currentFilePath: '/notes/test.md',
         mode: 'text',
       });
+      const depthBefore = opts.nav.stackDepth();
 
       dispatchGlobalKey('e', { escape: false }, opts);
 
-      expect(onRequestEditor).not.toHaveBeenCalled();
+      expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
   });
 });

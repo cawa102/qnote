@@ -1,6 +1,3 @@
-import { spawnSync } from 'node:child_process';
-import { resolveEditor } from './resolve-editor.js';
-
 /**
  * Restore terminal state by exiting alternate screen and showing cursor.
  * Called by signal handlers when TUI crashes or is interrupted.
@@ -9,15 +6,6 @@ import { resolveEditor } from './resolve-editor.js';
  */
 export function restoreTerminal(): void {
   process.stdout.write('\x1b[0m\x1b[?1049l\x1b[?25h');
-}
-
-/**
- * Spawn the user's preferred editor synchronously.
- * The editor gets full terminal control via inherited stdio.
- */
-export function spawnEditorSync(filePath: string): void {
-  const editor = resolveEditor();
-  spawnSync(editor, [filePath], { stdio: 'inherit' });
 }
 
 /**

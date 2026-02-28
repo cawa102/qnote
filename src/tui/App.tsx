@@ -11,6 +11,7 @@ import { NoteList } from './screens/NoteList.js';
 import { NotePreview } from './screens/NotePreview.js';
 import { SearchScreen } from './screens/SearchScreen.js';
 import { CaptureScreen } from './screens/CaptureScreen.js';
+import { EditorScreen } from './screens/EditorScreen.js';
 import type { NoteService } from '../core/note-service.js';
 import type { SearchIndex } from '../storage/search-index.js';
 import type { Note, NoteListItem } from '../types.js';
@@ -19,7 +20,7 @@ interface AppProps {
   readonly noteService: NoteService;
   readonly searchIndex: SearchIndex;
   readonly captureDir: string;
-  readonly onRequestEditor?: (filePath: string) => void;
+  readonly notesDir: string;
 }
 
 const navStore = createNavigationStore();
@@ -37,7 +38,7 @@ function AppContent({
   noteService,
   searchIndex,
   captureDir,
-  onRequestEditor,
+  notesDir,
 }: AppProps): React.ReactElement {
   const { rows } = useLayoutContext();
 
@@ -59,33 +60,13 @@ function AppContent({
   // Current note filePath for editor integration
   const currentFilePath =
     currentEntry.screen === 'notePreview'
-      ? (currentEntry.params?.filePath as string | undefined)
+      ? currentEntry.filePath
       : undefined;
-
-  // Handle edit via onRequestEditor (unmount/remount) or fallback to in-process
-  const handleEdit = useCallback(
-    (filePath: string) => {
-      if (onRequestEditor) {
-        onRequestEditor(filePath);
-      }
-    },
-    [onRequestEditor],
-  );
-
-  // Handle spawning $EDITOR from Capture (same flow, then pop)
-  const handleSpawnEditor = useCallback(
-    (filePath: string) => {
-      handleEdit(filePath);
-      navStore.pop();
-    },
-    [handleEdit],
-  );
 
   useGlobalKeys({
     nav: navStore,
     inputMode: inputModeStore,
     currentScreen: currentEntry.screen,
-    onRequestEditor,
     currentFilePath,
   });
 
@@ -125,7 +106,7 @@ function AppContent({
               content: `# ${title}\n\n`,
             })
             .then((note) => {
-              handleEdit(note.filePath);
+              navStore.push('editor', { filePath: note.filePath });
             });
           break;
         }
@@ -141,7 +122,7 @@ function AppContent({
               directory: 'daily',
             })
             .then((note) => {
-              handleEdit(note.filePath);
+              navStore.push('editor', { filePath: note.filePath });
             });
           break;
         }
@@ -165,18 +146,15 @@ function AppContent({
           break;
       }
     },
-    [noteService, handleEdit],
+    [noteService],
   );
 
   // Load note data when navigating to notePreview
   React.useEffect(() => {
-    if (currentEntry.screen === 'notePreview' && currentEntry.params) {
-      const filePath = currentEntry.params.filePath as string;
-      if (filePath) {
-        noteService.read(filePath).then((note) => {
-          setPreviewNote(note);
-        });
-      }
+    if (currentEntry.screen === 'notePreview') {
+      noteService.read(currentEntry.filePath).then((note) => {
+        setPreviewNote(note);
+      });
     }
   }, [currentEntry, noteService]);
 
@@ -214,7 +192,6 @@ function AppContent({
                 backlinkCount={backlinkCount}
                 nav={navStore}
                 noteService={noteService}
-                onEdit={handleEdit}
               />
             )}
 
@@ -233,7 +210,17 @@ function AppContent({
                 nav={navStore}
                 inputMode={inputModeStore}
                 captureDir={captureDir}
-                onSpawnEditor={handleSpawnEditor}
+              />
+            )}
+
+            {currentEntry.screen === 'editor' && (
+              <EditorScreen
+                noteService={noteService}
+                notesDir={notesDir}
+                nav={navStore}
+                inputMode={inputModeStore}
+                initialFilePath={currentEntry.filePath}
+                showFileTree={currentEntry.showFileTree}
               />
             )}
           </Box>

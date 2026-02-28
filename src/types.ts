@@ -56,16 +56,6 @@ export class FtsQueryError extends AppError {
   }
 }
 
-export class EditorNotFoundError extends AppError {
-  constructor() {
-    super(
-      'Editor not found. Please set the $EDITOR environment variable',
-      'EDITOR_NOT_FOUND',
-    );
-    this.name = 'EditorNotFoundError';
-  }
-}
-
 export class FrontmatterParseError extends AppError {
   readonly filePath: string;
 
@@ -144,14 +134,15 @@ export interface BackLink {
 
 // --- Navigation (discriminated union) ---
 
-export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'search' | 'capture';
+export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'search' | 'capture' | 'editor';
 
 export type ScreenEntry =
   | { readonly screen: 'palette' }
   | { readonly screen: 'noteList'; readonly filter?: string; readonly tag?: string }
   | { readonly screen: 'notePreview'; readonly filePath: string }
   | { readonly screen: 'search'; readonly initialQuery?: string }
-  | { readonly screen: 'capture' };
+  | { readonly screen: 'capture' }
+  | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean };
 
 export interface NavigationState {
   readonly stack: readonly ScreenEntry[];
@@ -161,7 +152,6 @@ export interface NavigationState {
 
 export interface QnoteConfig {
   readonly notesDir: string;
-  readonly editor: string;
   readonly daily: {
     readonly directory: string;
     readonly template: string;

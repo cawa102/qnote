@@ -1,42 +1,7 @@
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import matter from 'gray-matter';
 import { NoteService } from '../core/note-service.js';
 import { ConfigService } from '../core/config-service.js';
-import { resolveEditor } from './resolve-editor.js';
-
-function updateMtimeAfterEdit(
-  service: NoteService,
-  filePath: string,
-  mtimeBefore: number,
-): void {
-  const mtimeAfter = statSync(filePath).mtimeMs;
-  if (mtimeAfter <= mtimeBefore) return;
-
-  const raw = readFileSync(filePath, 'utf-8');
-  const parsed = matter(raw);
-  const now = new Date().toISOString();
-
-  parsed.data = {
-    ...parsed.data,
-    modified: now,
-  };
-
-  const updated = matter.stringify(parsed.content, parsed.data);
-  writeFileSync(filePath, updated, 'utf-8');
-
-  service.reindex();
-}
-
-function openInEditor(service: NoteService, filePath: string): void {
-  const editor = resolveEditor();
-  const mtimeBefore = statSync(filePath).mtimeMs;
-
-  spawnSync(editor, [filePath], { stdio: 'inherit' });
-
-  updateMtimeAfterEdit(service, filePath, mtimeBefore);
-}
 
 export function createCommands(notesDir: string, configDir?: string) {
   const resolvedConfigDir = configDir ?? join(process.env.HOME ?? '', '.qnote');
@@ -57,7 +22,7 @@ export function createCommands(notesDir: string, configDir?: string) {
           content: `# ${noteTitle}\n\n`,
         });
 
-        openInEditor(service, note.filePath);
+        console.log(`Created: ${note.filePath}`);
       } finally {
         service.close();
       }
@@ -115,7 +80,7 @@ export function createCommands(notesDir: string, configDir?: string) {
         const expectedPath = join(notesDir, dailyDir, `${dailySlug}.md`);
 
         if (existsSync(expectedPath)) {
-          openInEditor(service, expectedPath);
+          console.log(`Daily note exists: ${expectedPath}`);
           return;
         }
 
@@ -126,7 +91,7 @@ export function createCommands(notesDir: string, configDir?: string) {
           directory: dailyDir,
         });
 
-        openInEditor(service, note.filePath);
+        console.log(`Created daily note: ${note.filePath}`);
       } finally {
         service.close();
       }

@@ -4,7 +4,6 @@ import type { QnoteConfig } from '../types.js';
 
 const DEFAULT_CONFIG: QnoteConfig = {
   notesDir: '~/notes',
-  editor: '$EDITOR',
   daily: { directory: 'daily', template: 'daily' },
   capture: { directory: 'inbox' },
   search: { excludeDirs: ['.git', 'node_modules', '.qnote'] },

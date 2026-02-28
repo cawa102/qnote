@@ -19,7 +19,6 @@ describe('ConfigService', () => {
     it('returns default config when no file exists', () => {
       const config = ConfigService.load(join(tempHome, '.qnote'));
       expect(config.notesDir).toBe('~/notes');
-      expect(config.editor).toBe('$EDITOR');
       expect(config.daily.directory).toBe('daily');
       expect(config.daily.template).toBe('daily');
       expect(config.capture.directory).toBe('inbox');
@@ -43,13 +42,12 @@ describe('ConfigService', () => {
       mkdirSync(configDir, { recursive: true });
       writeFileSync(
         join(configDir, 'config.json'),
-        JSON.stringify({ editor: 'nvim' }),
+        JSON.stringify({ notesDir: '/merged/notes' }),
       );
 
       const config = ConfigService.load(configDir);
-      expect(config.editor).toBe('nvim');
+      expect(config.notesDir).toBe('/merged/notes');
       // Other defaults preserved
-      expect(config.notesDir).toBe('~/notes');
       expect(config.daily.directory).toBe('daily');
     });
 
@@ -73,20 +71,20 @@ describe('ConfigService', () => {
 
     it('creates config directory if it does not exist', () => {
       const configDir = join(tempHome, 'nested', '.qnote');
-      ConfigService.save(configDir, { editor: 'code' });
+      ConfigService.save(configDir, { notesDir: '/nested/notes' });
 
       const config = ConfigService.load(configDir);
-      expect(config.editor).toBe('code');
+      expect(config.notesDir).toBe('/nested/notes');
     });
 
     it('merges with existing config on disk', () => {
       const configDir = join(tempHome, '.qnote');
       ConfigService.save(configDir, { notesDir: '/first' });
-      ConfigService.save(configDir, { editor: 'vim' });
+      ConfigService.save(configDir, { capture: { directory: 'captures' } });
 
       const config = ConfigService.load(configDir);
       expect(config.notesDir).toBe('/first');
-      expect(config.editor).toBe('vim');
+      expect(config.capture.directory).toBe('captures');
     });
 
     it('writes valid JSON to disk', () => {

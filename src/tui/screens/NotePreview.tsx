@@ -21,7 +21,6 @@ interface NotePreviewProps {
   readonly backlinkCount: number;
   readonly nav: NavigationStore;
   readonly noteService: NoteService;
-  readonly onEdit: (filePath: string) => void;
 }
 
 export function NotePreview({
@@ -29,7 +28,6 @@ export function NotePreview({
   backlinkCount,
   nav,
   noteService,
-  onEdit,
 }: NotePreviewProps): React.ReactElement {
   const [showRaw, setShowRaw] = useState(false);
   const { contentWidth } = useLayoutContext();
@@ -58,9 +56,9 @@ export function NotePreview({
   }, [note.content, showRaw, isTooLarge, noteService]);
 
   useInput((input, key) => {
-    // e — open in $EDITOR
+    // e — open in built-in editor
     if (input === 'e') {
-      onEdit(note.filePath);
+      nav.push('editor', { filePath: note.filePath });
       return;
     }
 
@@ -84,7 +82,7 @@ export function NotePreview({
     return (
       <Box flexDirection="column">
         <Text>{theme.error(`Note too large (${Math.round(contentSize / 1_000_000)}MB). Max: 5MB.`)}</Text>
-        <Text dimColor>Press Esc to go back, e to open in $EDITOR.</Text>
+        <Text dimColor>Press Esc to go back, e to open in editor.</Text>
       </Box>
     );
   }

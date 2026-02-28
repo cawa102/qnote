@@ -41,7 +41,6 @@ interface CaptureScreenProps {
   readonly nav: NavigationStore;
   readonly inputMode: InputModeStore;
   readonly captureDir: string;
-  readonly onSpawnEditor: (filePath: string) => void;
 }
 
 export function CaptureScreen({
@@ -49,7 +48,6 @@ export function CaptureScreen({
   nav,
   inputMode,
   captureDir,
-  onSpawnEditor,
 }: CaptureScreenProps): React.ReactElement {
   const [title, setTitle] = useState('');
   const [saved, setSaved] = useState(false);
@@ -85,7 +83,7 @@ export function CaptureScreen({
       return;
     }
 
-    // Tab: Create note, then spawn $EDITOR
+    // Tab: Create note, then open built-in editor
     if (key.tab) {
       const noteTitle = title.trim() || buildCaptureSlug('');
       noteService
@@ -96,7 +94,8 @@ export function CaptureScreen({
           directory: captureDir,
         })
         .then((note) => {
-          onSpawnEditor(note.filePath);
+          nav.pop();
+          nav.push('editor', { filePath: note.filePath });
         })
         .catch((err: Error) => {
           setError(err.message);
@@ -130,7 +129,7 @@ export function CaptureScreen({
       )}
 
       <Box marginTop={2}>
-        <Text dimColor>  Enter: 保存  Tab: $EDITORで編集  Esc: 戻る</Text>
+        <Text dimColor>  Enter: 保存  Tab: エディタで編集  Esc: 戻る</Text>
       </Box>
     </Box>
   );

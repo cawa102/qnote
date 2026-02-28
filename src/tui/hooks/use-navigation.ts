@@ -1,9 +1,7 @@
-import type { ScreenName } from '../../types.js';
+import type { ScreenEntry, ScreenName } from '../../types.js';
 
-export interface ScreenEntry {
-  readonly screen: ScreenName;
-  readonly params?: Record<string, unknown>;
-}
+// Re-export for backwards compatibility
+export type { ScreenEntry };
 
 export interface NavigationStore {
   current(): ScreenEntry;
@@ -30,7 +28,8 @@ export function createNavigationStore(): NavigationStore {
     },
 
     push(screen: ScreenName, params?: Record<string, unknown>): void {
-      stack = [...stack, { screen, params }];
+      const entry = { screen, ...params } as ScreenEntry;
+      stack = [...stack, entry];
       notify();
     },
 

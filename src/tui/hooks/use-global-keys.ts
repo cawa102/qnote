@@ -7,7 +7,6 @@ interface UseGlobalKeysOptions {
   readonly nav: NavigationStore;
   readonly inputMode: InputModeStore;
   readonly currentScreen: string;
-  readonly onRequestEditor?: (filePath: string) => void;
   readonly currentFilePath?: string;
 }
 
@@ -15,7 +14,6 @@ export function useGlobalKeys({
   nav,
   inputMode,
   currentScreen,
-  onRequestEditor,
   currentFilePath,
 }: UseGlobalKeysOptions): void {
   const { exit } = useApp();
@@ -26,7 +24,6 @@ export function useGlobalKeys({
       inputMode,
       currentScreen,
       exit,
-      onRequestEditor,
       currentFilePath,
     });
   });

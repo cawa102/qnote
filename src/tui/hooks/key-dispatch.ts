@@ -10,7 +10,6 @@ export interface DispatchOptions {
   readonly inputMode: InputModeStore;
   readonly currentScreen: string;
   readonly exit: () => void;
-  readonly onRequestEditor?: (filePath: string) => void;
   readonly currentFilePath?: string;
 }
 
@@ -23,11 +22,12 @@ export function dispatchGlobalKey(
   key: KeyInfo,
   options: DispatchOptions,
 ): void {
-  const { nav, inputMode, currentScreen, exit, onRequestEditor, currentFilePath } = options;
+  const { nav, inputMode, currentScreen, exit, currentFilePath } = options;
   const mode = inputMode.current();
 
   // Esc — always works: pop navigation stack or exit
-  if (key.escape) {
+  // Skip for editor screen — EditorScreen handles its own Esc (dirty confirmation)
+  if (key.escape && currentScreen !== 'editor') {
     if (nav.stackDepth() <= 1) {
       exit();
     } else {
@@ -63,8 +63,8 @@ export function dispatchGlobalKey(
     return;
   }
 
-  // e — edit note (notePreview only)
-  if (input === 'e' && currentScreen === 'notePreview' && onRequestEditor && currentFilePath) {
-    onRequestEditor(currentFilePath);
+  // e — edit note (notePreview only) — opens built-in editor
+  if (input === 'e' && currentScreen === 'notePreview' && currentFilePath) {
+    nav.push('editor', { filePath: currentFilePath });
   }
 }

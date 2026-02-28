@@ -53,7 +53,6 @@ describe('types', () => {
       SlugCollisionError,
       FileWriteError,
       FtsQueryError,
-      EditorNotFoundError,
       FrontmatterParseError,
       NoteSizeLimitError,
     } = await import('../src/types.js');
@@ -86,10 +85,6 @@ describe('types', () => {
     expect(ftsQuery).toBeInstanceOf(AppError);
     expect(ftsQuery.code).toBe('FTS_QUERY_ERROR');
     expect(ftsQuery.query).toBe('bad query *[');
-
-    const editorNotFound = new EditorNotFoundError();
-    expect(editorNotFound).toBeInstanceOf(AppError);
-    expect(editorNotFound.code).toBe('EDITOR_NOT_FOUND');
 
     const frontmatterParse = new FrontmatterParseError('/notes/bad.md', 'invalid YAML');
     expect(frontmatterParse).toBeInstanceOf(AppError);

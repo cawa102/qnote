@@ -1,14 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { restoreTerminal, spawnEditorSync, extractSlugFromPath } from '../../src/tui/utils/terminal.js';
-
-vi.mock('node:child_process', () => ({
-  spawnSync: vi.fn().mockReturnValue({ status: 0 }),
-  execSync: vi.fn(), // used by resolveEditor
-}));
-
-vi.mock('../../src/tui/utils/resolve-editor.js', () => ({
-  resolveEditor: vi.fn().mockReturnValue('vim'),
-}));
+import { restoreTerminal, extractSlugFromPath } from '../../src/tui/utils/terminal.js';
 
 describe('restoreTerminal', () => {
   it('includes ANSI reset sequence to clear all attributes', () => {
@@ -51,18 +42,6 @@ describe('restoreTerminal', () => {
     const altScreenIndex = output.indexOf('\x1b[?1049l');
     expect(resetIndex).toBeLessThan(altScreenIndex);
     writeSpy.mockRestore();
-  });
-});
-
-describe('spawnEditorSync', () => {
-  it('spawns the resolved editor with the given file path and inherited stdio', async () => {
-    const { spawnSync } = await import('node:child_process');
-    const { resolveEditor } = await import('../../src/tui/utils/resolve-editor.js');
-
-    spawnEditorSync('/notes/test.md');
-
-    expect(resolveEditor).toHaveBeenCalled();
-    expect(spawnSync).toHaveBeenCalledWith('vim', ['/notes/test.md'], { stdio: 'inherit' });
   });
 });
 

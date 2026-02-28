@@ -11,15 +11,17 @@ describe('NavigationStore', () => {
   it('pushes a new screen onto the stack', () => {
     const nav = createNavigationStore();
     nav.push('noteList', { filter: 'recent' });
-    expect(nav.current().screen).toBe('noteList');
-    expect(nav.current().params).toEqual({ filter: 'recent' });
+    const entry = nav.current();
+    expect(entry.screen).toBe('noteList');
+    if (entry.screen === 'noteList') {
+      expect(entry.filter).toBe('recent');
+    }
   });
 
   it('pushes without params', () => {
     const nav = createNavigationStore();
     nav.push('search');
     expect(nav.current().screen).toBe('search');
-    expect(nav.current().params).toBeUndefined();
   });
 
   it('pops back to previous screen', () => {

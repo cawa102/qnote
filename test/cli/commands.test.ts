@@ -3,20 +3,6 @@ import { mkdtempSync, rmSync, existsSync, mkdirSync, readdirSync } from 'node:fs
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-// Mock resolve-editor so tests don't depend on system editors
-vi.mock('../../src/cli/resolve-editor.js', () => ({
-  resolveEditor: () => 'cat',
-}));
-
-// Mock child_process.spawnSync for editor calls
-vi.mock('node:child_process', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:child_process')>();
-  return {
-    ...actual,
-    spawnSync: vi.fn().mockReturnValue({ status: 0 }),
-  };
-});
-
 describe('createCommands', () => {
   let tempDir: string;
   let configDir: string;
@@ -31,17 +17,16 @@ describe('createCommands', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('newNote creates a note and spawns editor', async () => {
+  it('newNote creates a note and prints path', async () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.newNote('Test CLI Note');
+    logSpy.mockRestore();
 
     const files = readdirSync(tempDir).filter((f: string) => f.endsWith('.md'));
     expect(files.length).toBeGreaterThanOrEqual(1);
-
-    const { spawnSync: mockedSpawn } = await import('node:child_process');
-    expect(mockedSpawn).toHaveBeenCalled();
   });
 
   it('newNote generates untitled slug when no title given', async () => {
@@ -49,7 +34,9 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.newNote();
+    logSpy.mockRestore();
 
     const files = readdirSync(tempDir).filter((f: string) => f.endsWith('.md'));
     expect(files.length).toBeGreaterThanOrEqual(1);
@@ -60,9 +47,9 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.newNote('Searchable Note');
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.search('Searchable', {});
     logSpy.mockRestore();
   });
@@ -89,9 +76,8 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
-    await cmds.newNote('Listed Note');
-
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await cmds.newNote('Listed Note');
     await cmds.list({});
     logSpy.mockRestore();
   });
@@ -119,9 +105,8 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
-    await cmds.newNote('JSON Note');
-
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await cmds.newNote('JSON Note');
     await cmds.list({ format: 'json' });
 
     const jsonCall = logSpy.mock.calls.find((call) => {
@@ -144,7 +129,9 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.daily();
+    logSpy.mockRestore();
 
     const dailyDir = join(tempDir, 'daily');
     expect(existsSync(dailyDir)).toBe(true);
@@ -157,8 +144,10 @@ describe('createCommands', () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await cmds.daily();
     await cmds.daily();
+    logSpy.mockRestore();
 
     const dailyDir = join(tempDir, 'daily');
     const files = readdirSync(dailyDir).filter((f: string) => f.endsWith('.md'));
@@ -182,8 +171,6 @@ describe('createCommands', () => {
     const cmds = createCommands(tempDir, configDir);
 
     // Create tagged notes so the loop body executes
-    await cmds.newNote('Tagged Note A');
-    // Manually create a tagged note via NoteService for proper tagging
     const { NoteService } = await import('../../src/core/note-service.js');
     const svc = new NoteService(tempDir);
     await svc.create({ title: 'Tag Test', tags: ['myTag'], content: 'Tagged content.' });

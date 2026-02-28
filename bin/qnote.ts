@@ -7,7 +7,7 @@ import { App } from '../src/tui/App.js';
 import { NoteService } from '../src/core/note-service.js';
 import { ConfigService } from '../src/core/config-service.js';
 import { createCommands } from '../src/cli/commands.js';
-import { restoreTerminal, spawnEditorSync } from '../src/tui/utils/terminal.js';
+import { restoreTerminal } from '../src/tui/utils/terminal.js';
 import { join } from 'node:path';
 
 const program = new Command();
@@ -44,19 +44,13 @@ async function startTui(notesDir: string): Promise<void> {
   process.once('uncaughtException', handleUncaughtException);
 
   const noteService = new NoteService(notesDir);
-  let editorFilePath: string | null = null;
-
-  const onRequestEditor = (filePath: string): void => {
-    editorFilePath = filePath;
-    ink.instance.unmount();
-  };
 
   const ink = withFullScreen(
     React.createElement(App, {
       noteService,
       searchIndex: noteService.getSearchIndex(),
       captureDir: join(notesDir, 'inbox'),
-      onRequestEditor,
+      notesDir,
     }),
   );
 
@@ -68,12 +62,6 @@ async function startTui(notesDir: string): Promise<void> {
   process.removeListener('SIGINT', handleSigInt);
   process.removeListener('SIGTERM', handleSigTerm);
   process.removeListener('uncaughtException', handleUncaughtException);
-
-  // If editor was requested, spawn it and restart TUI
-  if (editorFilePath) {
-    spawnEditorSync(editorFilePath);
-    await startTui(notesDir);
-  }
 }
 
 // --- CLI setup ---
