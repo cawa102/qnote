@@ -21,21 +21,22 @@ const FUSE_OPTIONS = {
 /**
  * Build display entries from scanned files, applying fuzzy filter and truncation.
  * Extracted as a pure function for testability.
+ * When fuse is provided, uses it for search; otherwise creates a new instance.
  */
 export function buildDisplayEntries(
   allFiles: readonly ScannedFile[],
   query: string,
   isLoading: boolean,
+  fuse?: Fuse<ScannedFile> | null,
 ): ScannedFile[] {
-  if (isLoading) return [];
-  if (allFiles.length === 0) return [];
+  if (isLoading || allFiles.length === 0) return [];
 
   if (query.trim() === '') {
     return allFiles.slice(0, MAX_DISPLAY) as ScannedFile[];
   }
 
-  const fuse = new Fuse([...allFiles], FUSE_OPTIONS);
-  const results = fuse.search(query);
+  const searcher = fuse ?? new Fuse([...allFiles], FUSE_OPTIONS);
+  const results = searcher.search(query);
   return results.slice(0, MAX_DISPLAY).map((r) => r.item);
 }
 
@@ -69,29 +70,29 @@ export function FindFileScreen({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const files = await scanNoteFiles(notesDir);
-      if (!cancelled) {
-        setAllFiles(files);
-        fuseRef.current = new Fuse([...files], FUSE_OPTIONS);
-        setIsLoading(false);
+      try {
+        const files = await scanNoteFiles(notesDir);
+        if (!cancelled) {
+          setAllFiles(files);
+          fuseRef.current = new Fuse([...files], FUSE_OPTIONS);
+          setIsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
   }, [notesDir]);
 
-  // Compute display entries
-  const displayEntries: ScannedFile[] = (() => {
-    if (isLoading) return [];
-    if (allFiles.length === 0) return [];
-
-    if (debouncedQuery.trim() === '') {
-      return allFiles.slice(0, MAX_DISPLAY) as ScannedFile[];
-    }
-
-    if (!fuseRef.current) return [];
-    const results = fuseRef.current.search(debouncedQuery);
-    return results.slice(0, MAX_DISPLAY).map((r) => r.item);
-  })();
+  // Use the shared pure function for display entries
+  const displayEntries = buildDisplayEntries(
+    allFiles,
+    debouncedQuery,
+    isLoading,
+    fuseRef.current,
+  );
 
   const handleChange = useCallback((value: string) => {
     setQuery(value);
@@ -117,7 +118,7 @@ export function FindFileScreen({
     ? '読み込み中...'
     : allFiles.length === 0
       ? 'ノートがありません'
-      : `${displayEntries.length} files`;
+      : `${displayEntries.length} 件`;
 
   return (
     <Box flexDirection="column">

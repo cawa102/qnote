@@ -27,7 +27,7 @@ describe('buildDisplayEntries', () => {
     expect(result[1]!.relativePath).toBe('beta.md');
   });
 
-  it('returns "ノートがありません" indicator when files is empty and not loading', () => {
+  it('returns empty array when files is empty and not loading', () => {
     const result = buildDisplayEntries([], '', false);
     expect(result).toEqual([]);
   });
