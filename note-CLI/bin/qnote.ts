@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import React from 'react';
-import { render } from 'ink';
+import { withFullScreen } from 'fullscreen-ink';
 import { Command } from 'commander';
 import { App } from '../src/tui/App.js';
+import { NoteService } from '../src/core/note-service.js';
 import { ConfigService } from '../src/core/config-service.js';
 import { createCommands } from '../src/cli/commands.js';
+import { restoreTerminal, spawnEditorSync } from '../src/tui/utils/terminal.js';
 import { join } from 'node:path';
 
 const program = new Command();
@@ -18,18 +20,74 @@ function resolveNotesDir(): string {
   return ConfigService.resolveNotesDir(config.notesDir);
 }
 
+// --- Fullscreen TUI launcher ---
+
+async function startTui(notesDir: string): Promise<void> {
+  // Signal handlers — safety net for abnormal termination
+  // (fullscreen-ink handles normal alternate screen lifecycle)
+  const handleSigInt = (): void => {
+    restoreTerminal();
+    process.exit(130);
+  };
+  const handleSigTerm = (): void => {
+    restoreTerminal();
+    process.exit(143);
+  };
+  const handleUncaughtException = (err: Error): void => {
+    restoreTerminal();
+    console.error('Fatal:', err.message);
+    process.exit(1);
+  };
+
+  process.on('SIGINT', handleSigInt);
+  process.on('SIGTERM', handleSigTerm);
+  process.on('uncaughtException', handleUncaughtException);
+
+  const noteService = new NoteService(notesDir);
+  let editorFilePath: string | null = null;
+
+  const onRequestEditor = (filePath: string): void => {
+    editorFilePath = filePath;
+    ink.instance.unmount();
+  };
+
+  const ink = withFullScreen(
+    React.createElement(App, {
+      noteService,
+      searchIndex: noteService.getSearchIndex(),
+      captureDir: join(notesDir, 'inbox'),
+      onRequestEditor,
+    }),
+  );
+
+  await ink.start();
+  await ink.waitUntilExit();
+
+  // Cleanup after TUI exits
+  noteService.close();
+  process.removeListener('SIGINT', handleSigInt);
+  process.removeListener('SIGTERM', handleSigTerm);
+  process.removeListener('uncaughtException', handleUncaughtException);
+
+  // If editor was requested, spawn it and restart TUI
+  if (editorFilePath) {
+    spawnEditorSync(editorFilePath);
+    await startTui(notesDir);
+  }
+}
+
+// --- CLI setup ---
+
 program
   .name('qnote')
   .version('0.1.0')
   .description('AI-friendly terminal-native note-taking app');
 
-// Default action (no subcommand) → launch TUI
-program.action(() => {
+// Default action (no subcommand) → launch fullscreen TUI
+program.action(async () => {
   const notesDir = resolveNotesDir();
   ConfigService.ensureDirectories(notesDir);
-
-  const instance = render(React.createElement(App));
-  instance.waitUntilExit();
+  await startTui(notesDir);
 });
 
 program

@@ -118,6 +118,10 @@ export class NoteService {
     return null;
   }
 
+  getSearchIndex(): SearchIndex {
+    return this.index;
+  }
+
   close(): void {
     this.index.close();
   }

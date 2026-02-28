@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useSyncExternalStore } from 'react';
 import { Box } from 'ink';
-import { spawnSync } from 'node:child_process';
 import { createNavigationStore } from './hooks/use-navigation.js';
 import { createInputModeStore } from './hooks/use-input-mode.js';
 import { useGlobalKeys } from './hooks/use-global-keys.js';
@@ -10,7 +9,6 @@ import { NoteList } from './screens/NoteList.js';
 import { NotePreview } from './screens/NotePreview.js';
 import { SearchScreen } from './screens/SearchScreen.js';
 import { CaptureScreen } from './screens/CaptureScreen.js';
-import { resolveEditor } from './utils/resolve-editor.js';
 import type { NoteService } from '../core/note-service.js';
 import type { SearchIndex } from '../storage/search-index.js';
 import type { Note, NoteListItem } from '../types.js';
@@ -19,6 +17,7 @@ interface AppProps {
   readonly noteService: NoteService;
   readonly searchIndex: SearchIndex;
   readonly captureDir: string;
+  readonly onRequestEditor?: (filePath: string) => void;
 }
 
 const navStore = createNavigationStore();
@@ -28,6 +27,7 @@ export function App({
   noteService,
   searchIndex,
   captureDir,
+  onRequestEditor,
 }: AppProps): React.ReactElement {
   const currentEntry = useSyncExternalStore(
     (cb) => navStore.subscribe(cb),
@@ -39,33 +39,25 @@ export function App({
     () => inputModeStore.current(),
   );
 
-  useGlobalKeys({
-    nav: navStore,
-    inputMode: inputModeStore,
-    currentScreen: currentEntry.screen,
-  });
-
   // State for screens that need loaded data
   const [previewNote, setPreviewNote] = useState<Note | null>(null);
   const [noteListItems, setNoteListItems] = useState<readonly NoteListItem[]>([]);
   const [noteListTitle, setNoteListTitle] = useState('Recent');
 
-  // Handle spawning $EDITOR synchronously (blocks TUI)
+  // Current note filePath for editor integration
+  const currentFilePath =
+    currentEntry.screen === 'notePreview'
+      ? (currentEntry.params?.filePath as string | undefined)
+      : undefined;
+
+  // Handle edit via onRequestEditor (unmount/remount) or fallback to in-process
   const handleEdit = useCallback(
     (filePath: string) => {
-      try {
-        const editor = resolveEditor();
-        spawnSync(editor, [filePath], { stdio: 'inherit' });
-
-        // Reload note after editing
-        noteService.read(filePath).then((updatedNote) => {
-          setPreviewNote(updatedNote);
-        });
-      } catch {
-        // EditorNotFoundError — stay in TUI
+      if (onRequestEditor) {
+        onRequestEditor(filePath);
       }
     },
-    [noteService],
+    [onRequestEditor],
   );
 
   // Handle spawning $EDITOR from Capture (same flow, then pop)
@@ -76,6 +68,14 @@ export function App({
     },
     [handleEdit],
   );
+
+  useGlobalKeys({
+    nav: navStore,
+    inputMode: inputModeStore,
+    currentScreen: currentEntry.screen,
+    onRequestEditor,
+    currentFilePath,
+  });
 
   // Handle command palette action
   const handleAction = useCallback(
