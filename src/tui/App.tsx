@@ -174,6 +174,7 @@ function AppContent({
             {currentEntry.screen === 'palette' && (
               <CommandPalette
                 nav={navStore}
+                inputMode={inputModeStore}
                 onAction={handleAction}
               />
             )}

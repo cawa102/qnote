@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import Fuse from 'fuse.js';
@@ -7,6 +7,7 @@ import { formatRuler } from '../../theme/format.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { TitleBanner } from '../components/TitleBanner.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
+import type { InputModeStore } from '../hooks/use-input-mode.js';
 
 export interface PaletteCommand {
   readonly label: string;
@@ -38,20 +39,32 @@ export function filterCommands(
 
 interface CommandPaletteProps {
   readonly nav: NavigationStore;
+  readonly inputMode: InputModeStore;
   readonly onAction: (action: string, query: string) => void;
 }
 
-export function CommandPalette({ onAction }: CommandPaletteProps): React.ReactElement {
+export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const filtered = filterCommands(PALETTE_COMMANDS, query);
   const { contentWidth, showTitleArt } = useLayoutContext();
 
-  useInput((input, key) => {
-    if (key.downArrow || (input === 'j' && query === '')) {
+  const handleChange = useCallback((value: string) => {
+    setQuery(value);
+    setSelectedIndex(0);
+  }, []);
+
+  // Set input mode to text on mount to prevent global key interference
+  React.useEffect(() => {
+    inputMode.set('text');
+    return () => inputMode.set('navigation');
+  }, [inputMode]);
+
+  useInput((_input, key) => {
+    if (key.downArrow) {
       setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
     }
-    if (key.upArrow || (input === 'k' && query === '')) {
+    if (key.upArrow) {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     }
     if (key.return && filtered.length > 0) {
@@ -70,10 +83,7 @@ export function CommandPalette({ onAction }: CommandPaletteProps): React.ReactEl
         <Text>{'  > '}</Text>
         <TextInput
           placeholder="type a command..."
-          onChange={(value) => {
-            setQuery(value);
-            setSelectedIndex(0);
-          }}
+          onChange={handleChange}
         />
       </Box>
       <Box flexDirection="column" marginTop={1}>
