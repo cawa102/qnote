@@ -14,3 +14,6 @@ export type {
 } from './search-index.js';
 
 export { extractWikiLinks } from './link-parser.js';
+
+export { scanNoteFiles } from './file-scanner.js';
+export type { ScanOptions, ScannedFile } from './file-scanner.js';
