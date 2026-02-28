@@ -2,8 +2,16 @@ import { describe, it, expect } from 'vitest';
 import {
   renderViewport,
   calculateScrollOffset,
+  insertCursor,
 } from '../../../src/tui/editor/renderer.js';
 import type { RenderOptions } from '../../../src/tui/editor/renderer.js';
+
+const REV_ON = '\x1b[7m';
+const REV_OFF = '\x1b[27m';
+
+/** Strip block cursor (reverse video) ANSI codes. */
+const stripCursor = (s: string): string =>
+  s.replace(/\x1b\[7m/g, '').replace(/\x1b\[27m/g, '');
 
 const makeOptions = (overrides: Partial<RenderOptions> = {}): RenderOptions => ({
   lines: overrides.lines ?? ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5'],
@@ -59,6 +67,45 @@ describe('Renderer', () => {
     });
   });
 
+  describe('insertCursor (block cursor)', () => {
+    it('highlights character at col with reverse video', () => {
+      expect(insertCursor('hello', 0)).toBe(`${REV_ON}h${REV_OFF}ello`);
+      expect(insertCursor('hello', 2)).toBe(`he${REV_ON}l${REV_OFF}lo`);
+      expect(insertCursor('hello', 4)).toBe(`hell${REV_ON}o${REV_OFF}`);
+    });
+
+    it('appends reversed space at end of line', () => {
+      expect(insertCursor('abc', 3)).toBe(`abc${REV_ON} ${REV_OFF}`);
+      expect(insertCursor('', 0)).toBe(`${REV_ON} ${REV_OFF}`);
+    });
+
+    it('handles col beyond line length', () => {
+      expect(insertCursor('ab', 10)).toBe(`ab${REV_ON} ${REV_OFF}`);
+    });
+
+    it('handles CJK characters', () => {
+      expect(insertCursor('日本語', 0)).toBe(`${REV_ON}日${REV_OFF}本語`);
+      expect(insertCursor('日本語', 1)).toBe(`日${REV_ON}本${REV_OFF}語`);
+      expect(insertCursor('日本語', 3)).toBe(`日本語${REV_ON} ${REV_OFF}`);
+    });
+
+    it('handles ANSI codes without counting them', () => {
+      const line = '\x1b[31mhello\x1b[0m';
+      expect(insertCursor(line, 0)).toBe(`\x1b[31m${REV_ON}h${REV_OFF}ello\x1b[0m`);
+      expect(insertCursor(line, 2)).toBe(`\x1b[31mhe${REV_ON}l${REV_OFF}lo\x1b[0m`);
+    });
+
+    it('appends reversed space at end of ANSI-styled line', () => {
+      const line = '\x1b[31mhi\x1b[0m';
+      expect(insertCursor(line, 2)).toBe(`\x1b[31mhi\x1b[0m${REV_ON} ${REV_OFF}`);
+    });
+
+    it('preserves all characters (no character replaced)', () => {
+      const result = insertCursor('abc', 1);
+      expect(stripCursor(result)).toBe('abc');
+    });
+  });
+
   describe('renderViewport', () => {
     it('shows only visible lines when content exceeds viewport', () => {
       const options = makeOptions({
@@ -66,7 +113,7 @@ describe('Renderer', () => {
         scrollOffset: 0,
       });
       const result = renderViewport(options);
-      const contentLines = result.content.split('\n');
+      const contentLines = result.content.split('\n').map(stripCursor);
       expect(contentLines).toHaveLength(3);
       expect(contentLines[0]).toBe('Line 1');
       expect(contentLines[1]).toBe('Line 2');
@@ -79,7 +126,7 @@ describe('Renderer', () => {
         cursor: { line: 3, col: 0 }, // cursor within viewport so auto-scroll doesn't adjust
       });
       const result = renderViewport(options);
-      const contentLines = result.content.split('\n');
+      const contentLines = result.content.split('\n').map(stripCursor);
       expect(contentLines[0]).toBe('Line 3');
       expect(contentLines[1]).toBe('Line 4');
       expect(contentLines[2]).toBe('Line 5');
@@ -103,7 +150,7 @@ describe('Renderer', () => {
         viewportHeight: 5,
       });
       const result = renderViewport(options);
-      const contentLines = result.content.split('\n');
+      const contentLines = result.content.split('\n').map(stripCursor);
       expect(contentLines).toHaveLength(5);
       expect(contentLines[0]).toBe('Line 1');
       expect(contentLines[1]).toBe('Line 2');
@@ -189,7 +236,7 @@ describe('Renderer', () => {
         viewportHeight: 1,
       });
       const result = renderViewport(options);
-      expect(result.content).toBe('[styled]# Title[/styled]');
+      expect(stripCursor(result.content)).toBe('[styled]# Title[/styled]');
     });
 
     it('truncates lines that exceed viewport width', () => {
@@ -216,7 +263,7 @@ describe('Renderer', () => {
         viewportHeight: 1,
       });
       const result = renderViewport(options);
-      expect(result.content).toBe('日本語');
+      expect(stripCursor(result.content)).toBe('日本語');
     });
 
     it('does not count ANSI escape codes toward width', () => {
@@ -229,7 +276,7 @@ describe('Renderer', () => {
       });
       const result = renderViewport(options);
       // "hello" is 5 chars visible, fits in width 10
-      expect(result.content).toBe(ansiLine);
+      expect(stripCursor(result.content)).toBe(ansiLine);
     });
 
     it('truncates text with ANSI codes preserving codes', () => {
@@ -243,9 +290,43 @@ describe('Renderer', () => {
       const result = renderViewport(options);
       // Should contain opening ANSI code + 10 A's
       expect(result.content).toContain('\x1b[31m');
-      // Visible content should be 10 A's
-      const stripped = result.content.replace(/\x1b\[[0-9;]*m/g, '');
+      // Visible content should be 10 A's (cursor adds a space if at end)
+      const stripped = stripCursor(result.content).replace(/\x1b\[[0-9;]*m/g, '');
       expect(stripped.length).toBe(10);
+    });
+
+    it('inserts block cursor at cursor position', () => {
+      const options = makeOptions({
+        lines: ['abc'],
+        highlightedLines: ['abc'],
+        cursor: { line: 0, col: 1 },
+        viewportHeight: 1,
+      });
+      const result = renderViewport(options);
+      expect(result.content).toBe(`a${REV_ON}b${REV_OFF}c`);
+    });
+
+    it('shows reversed space at end of line when cursor at end', () => {
+      const options = makeOptions({
+        lines: ['ab'],
+        highlightedLines: ['ab'],
+        cursor: { line: 0, col: 2 },
+        viewportHeight: 1,
+      });
+      const result = renderViewport(options);
+      expect(result.content).toBe(`ab${REV_ON} ${REV_OFF}`);
+    });
+
+    it('does not insert cursor on non-cursor lines', () => {
+      const options = makeOptions({
+        lines: ['AAA', 'BBB'],
+        highlightedLines: ['AAA', 'BBB'],
+        cursor: { line: 0, col: 0 },
+        viewportHeight: 2,
+      });
+      const result = renderViewport(options);
+      const lines = result.content.split('\n');
+      expect(lines[1]).toBe('BBB');
     });
   });
 });

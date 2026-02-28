@@ -487,8 +487,9 @@ function getKeyName(key: {
   meta: boolean;
 }): string | undefined {
   if (key.return) return 'return';
-  if (key.backspace) return 'backspace';
-  if (key.delete) return 'delete';
+  // Ink maps macOS Backspace (\x7f) to key.delete instead of key.backspace.
+  // Treat both as 'backspace' (deleteBackward). Use Ctrl+D for deleteForward.
+  if (key.backspace || key.delete) return 'backspace';
   if (key.tab) return 'tab';
   if (key.upArrow) return 'up';
   if (key.downArrow) return 'down';

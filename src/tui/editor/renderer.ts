@@ -6,6 +6,10 @@ const SCROLL_MARGIN = 3;
 // Regex to match ANSI escape sequences
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
+// ANSI reverse video for block cursor
+const REVERSE_ON = '\x1b[7m';
+const REVERSE_OFF = '\x1b[27m';
+
 export interface RenderOptions {
   readonly lines: readonly string[];
   readonly highlightedLines: readonly string[];
@@ -105,8 +109,56 @@ function truncateToWidth(text: string, width: number): string {
 }
 
 /**
+ * Apply block cursor (reverse video) at the given column position
+ * in a line that may contain ANSI escape codes.
+ *
+ * The character at col is wrapped with reverse video. If col is at or
+ * past the end of the line, a reversed space is appended.
+ */
+export function insertCursor(highlightedLine: string, col: number): string {
+  let visibleIndex = 0;
+  let i = 0;
+  let result = '';
+  let cursorApplied = false;
+
+  while (i < highlightedLine.length) {
+    // Skip ANSI escape sequences
+    const ansiMatch = highlightedLine.slice(i).match(/^\x1b\[[0-9;]*m/);
+    if (ansiMatch) {
+      result += ansiMatch[0];
+      i += ansiMatch[0].length;
+      continue;
+    }
+
+    // Wrap the character at col with reverse video
+    if (visibleIndex === col && !cursorApplied) {
+      const cp = highlightedLine.codePointAt(i)!;
+      const char = String.fromCodePoint(cp);
+      result += REVERSE_ON + char + REVERSE_OFF;
+      i += char.length;
+      visibleIndex++;
+      cursorApplied = true;
+      continue;
+    }
+
+    const cp = highlightedLine.codePointAt(i)!;
+    const char = String.fromCodePoint(cp);
+    result += char;
+    i += char.length;
+    visibleIndex++;
+  }
+
+  // Cursor at or past end of line — append reversed space
+  if (!cursorApplied) {
+    result += REVERSE_ON + ' ' + REVERSE_OFF;
+  }
+
+  return result;
+}
+
+/**
  * Render the text editor viewport as a string.
- * Handles scroll offset, line truncation, and viewport padding.
+ * Handles scroll offset, line truncation, cursor display, and viewport padding.
  */
 export function renderViewport(options: RenderOptions): RenderedOutput {
   const { highlightedLines, cursor, viewportHeight, viewportWidth } = options;
@@ -114,14 +166,22 @@ export function renderViewport(options: RenderOptions): RenderedOutput {
   // Calculate the updated scroll offset
   const scrollOffset = calculateScrollOffset(cursor, options.scrollOffset, viewportHeight);
 
-  // Build viewport lines
+  // Build viewport lines with cursor indicator
   const viewportLines: string[] = [];
   for (let i = 0; i < viewportHeight; i++) {
     const lineIndex = scrollOffset + i;
     if (lineIndex < highlightedLines.length) {
-      viewportLines.push(truncateToWidth(highlightedLines[lineIndex], viewportWidth));
+      let line = truncateToWidth(highlightedLines[lineIndex], viewportWidth);
+      if (lineIndex === cursor.line) {
+        line = insertCursor(line, cursor.col);
+      }
+      viewportLines.push(line);
     } else {
-      viewportLines.push('');
+      if (lineIndex === cursor.line) {
+        viewportLines.push(REVERSE_ON + ' ' + REVERSE_OFF);
+      } else {
+        viewportLines.push('');
+      }
     }
   }
 

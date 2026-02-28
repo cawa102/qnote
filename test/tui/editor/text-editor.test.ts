@@ -100,10 +100,23 @@ describe('TextEditorController', () => {
   });
 
   describe('Delete', () => {
-    it('deletes character forward', () => {
+    it('deletes character forward via name', () => {
       const ctrl = TextEditorController.create('abc')
         .handleInput('', key('delete'));
       expect(ctrl.getContent()).toBe('bc');
+    });
+
+    it('deletes character forward via Ctrl+D', () => {
+      const ctrl = TextEditorController.create('abc')
+        .handleInput('d', key('d', { ctrl: true }));
+      expect(ctrl.getContent()).toBe('bc');
+    });
+
+    it('Ctrl+D merges with next line at end of line', () => {
+      const ctrl = TextEditorController.create('abc\ndef')
+        .handleInput('', key('end'))
+        .handleInput('d', key('d', { ctrl: true }));
+      expect(ctrl.getContent()).toBe('abcdef');
     });
   });
 

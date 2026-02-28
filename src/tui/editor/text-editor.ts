@@ -68,6 +68,8 @@ export class TextEditorController {
           return this._buffer.checkpoint().wrapSelection('**', '**');
         case 'i':
           return this._buffer.checkpoint().wrapSelection('*', '*');
+        case 'd':
+          return this._buffer.checkpoint().deleteForward();
         case 'k':
           return this._buffer.checkpoint().insertAt(
             this._buffer.getState().cursor,
@@ -90,6 +92,9 @@ export class TextEditorController {
         case 'backspace':
           return this._buffer.checkpoint().deleteBackward();
         case 'delete':
+          // Currently unreachable from EditorScreen (Ink maps macOS Backspace
+          // to key.delete, so getKeyName maps both to 'backspace').
+          // Kept for direct API use and future Linux/Windows support.
           return this._buffer.checkpoint().deleteForward();
         case 'tab':
           return shift
