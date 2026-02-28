@@ -4,6 +4,8 @@ import { TextInput } from '@inkjs/ui';
 import Fuse from 'fuse.js';
 import { theme } from '../../theme/colors.js';
 import { formatRuler } from '../../theme/format.js';
+import { useLayoutContext } from '../hooks/layout-context.js';
+import { TitleBanner } from '../components/TitleBanner.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 
 export interface PaletteCommand {
@@ -43,6 +45,7 @@ export function CommandPalette({ onAction }: CommandPaletteProps): React.ReactEl
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const filtered = filterCommands(PALETTE_COMMANDS, query);
+  const { contentWidth, showTitleArt } = useLayoutContext();
 
   useInput((input, key) => {
     if (key.downArrow || (input === 'j' && query === '')) {
@@ -60,10 +63,9 @@ export function CommandPalette({ onAction }: CommandPaletteProps): React.ReactEl
   });
 
   return (
-    <Box flexDirection="column" padding={1}>
-      <Text>
-        {theme.bold('qnote')} {formatRuler(30)}
-      </Text>
+    <Box flexDirection="column">
+      <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
+      <Text>{formatRuler(contentWidth)}</Text>
       <Box marginTop={1}>
         <Text>{'  > '}</Text>
         <TextInput

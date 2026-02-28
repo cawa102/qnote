@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { theme } from '../../theme/colors.js';
 import { formatRuler } from '../../theme/format.js';
+import { useLayoutContext } from '../hooks/layout-context.js';
 import type { NoteService } from '../../core/note-service.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { InputModeStore } from '../hooks/use-input-mode.js';
@@ -53,6 +54,7 @@ export function CaptureScreen({
   const [title, setTitle] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { contentWidth } = useLayoutContext();
 
   // Set input mode to text on mount
   React.useEffect(() => {
@@ -104,15 +106,15 @@ export function CaptureScreen({
 
   if (saved) {
     return (
-      <Box padding={1}>
+      <Box>
         <Text color="green">保存しました → {captureDir}/</Text>
       </Box>
     );
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
-      <Text>  {theme.bold('Quick Capture')} {formatRuler(20)}</Text>
+    <Box flexDirection="column">
+      <Text>  {theme.bold('Quick Capture')} {formatRuler(Math.max(0, contentWidth - 16))}</Text>
       <Box marginTop={1}>
         <Text>  Title: </Text>
         <TextInput

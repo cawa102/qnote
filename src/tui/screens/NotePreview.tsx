@@ -8,6 +8,7 @@ import {
   formatRuler,
 } from '../../theme/format.js';
 import { renderMarkdown, numberWikiLinks } from '../utils/render-markdown.js';
+import { useLayoutContext } from '../hooks/layout-context.js';
 import type { Note } from '../../types.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { NoteService } from '../../core/note-service.js';
@@ -31,6 +32,7 @@ export function NotePreview({
   onEdit,
 }: NotePreviewProps): React.ReactElement {
   const [showRaw, setShowRaw] = useState(false);
+  const { contentWidth } = useLayoutContext();
 
   const contentSize = Buffer.byteLength(note.content, 'utf-8');
   const isTooLarge = contentSize >= SIZE_REFUSE_BYTES;
@@ -80,7 +82,7 @@ export function NotePreview({
 
   if (isTooLarge) {
     return (
-      <Box flexDirection="column" padding={1}>
+      <Box flexDirection="column">
         <Text>{theme.error(`Note too large (${Math.round(contentSize / 1_000_000)}MB). Max: 5MB.`)}</Text>
         <Text dimColor>Press Esc to go back, e to open in $EDITOR.</Text>
       </Box>
@@ -88,7 +90,7 @@ export function NotePreview({
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column">
       {/* Header */}
       <Text>{theme.heading(note.meta.title)}</Text>
       <Text>
@@ -97,7 +99,7 @@ export function NotePreview({
         {'  '}{formatDate(note.meta.modified)}
         {'  '}{formatBacklinks(backlinkCount)}
       </Text>
-      <Text>{formatRuler(40)}</Text>
+      <Text>{formatRuler(contentWidth)}</Text>
 
       {/* Content */}
       <Box flexDirection="column" marginTop={1}>
@@ -107,7 +109,7 @@ export function NotePreview({
       {/* Wikilinks legend */}
       {linkStatuses.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
-          <Text>{formatRuler(40)}</Text>
+          <Text>{formatRuler(contentWidth)}</Text>
           <Text dimColor>Links:</Text>
           {linkStatuses
             .filter((l) => l.number !== null)
