@@ -4,6 +4,8 @@ import { createNavigationStore } from './hooks/use-navigation.js';
 import { createInputModeStore } from './hooks/use-input-mode.js';
 import { useGlobalKeys } from './hooks/use-global-keys.js';
 import { Footer } from './components/Footer.js';
+import { CenteredLayout } from './components/CenteredLayout.js';
+import { LayoutProvider } from './hooks/layout-context.js';
 import { CommandPalette } from './screens/CommandPalette.js';
 import { NoteList } from './screens/NoteList.js';
 import { NotePreview } from './screens/NotePreview.js';
@@ -177,53 +179,59 @@ export function App({
       : 0;
 
   return (
+    <LayoutProvider>
     <Box flexDirection="column" width="100%">
-      <Box flexDirection="column" flexGrow={1}>
-        {currentEntry.screen === 'palette' && (
-          <CommandPalette
-            nav={navStore}
-            onAction={handleAction}
-          />
-        )}
+      <CenteredLayout>
+        <Box flexDirection="column" flexGrow={1}>
+          {currentEntry.screen === 'palette' && (
+            <CommandPalette
+              nav={navStore}
+              onAction={handleAction}
+            />
+          )}
 
-        {currentEntry.screen === 'noteList' && (
-          <NoteList
-            title={noteListTitle}
-            items={noteListItems}
-            nav={navStore}
-          />
-        )}
+          {currentEntry.screen === 'noteList' && (
+            <NoteList
+              title={noteListTitle}
+              items={noteListItems}
+              nav={navStore}
+            />
+          )}
 
-        {currentEntry.screen === 'notePreview' && previewNote !== null && (
-          <NotePreview
-            note={previewNote}
-            backlinkCount={backlinkCount}
-            nav={navStore}
-            noteService={noteService}
-            onEdit={handleEdit}
-          />
-        )}
+          {currentEntry.screen === 'notePreview' && previewNote !== null && (
+            <NotePreview
+              note={previewNote}
+              backlinkCount={backlinkCount}
+              nav={navStore}
+              noteService={noteService}
+              onEdit={handleEdit}
+            />
+          )}
 
-        {currentEntry.screen === 'search' && (
-          <SearchScreen
-            noteService={noteService}
-            searchIndex={searchIndex}
-            nav={navStore}
-            inputMode={inputModeStore}
-          />
-        )}
+          {currentEntry.screen === 'search' && (
+            <SearchScreen
+              noteService={noteService}
+              searchIndex={searchIndex}
+              nav={navStore}
+              inputMode={inputModeStore}
+            />
+          )}
 
-        {currentEntry.screen === 'capture' && (
-          <CaptureScreen
-            noteService={noteService}
-            nav={navStore}
-            inputMode={inputModeStore}
-            captureDir={captureDir}
-            onSpawnEditor={handleSpawnEditor}
-          />
-        )}
-      </Box>
-      <Footer screen={currentEntry.screen} />
+          {currentEntry.screen === 'capture' && (
+            <CaptureScreen
+              noteService={noteService}
+              nav={navStore}
+              inputMode={inputModeStore}
+              captureDir={captureDir}
+              onSpawnEditor={handleSpawnEditor}
+            />
+          )}
+        </Box>
+      </CenteredLayout>
+      <CenteredLayout>
+        <Footer screen={currentEntry.screen} />
+      </CenteredLayout>
     </Box>
+    </LayoutProvider>
   );
 }

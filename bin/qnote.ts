@@ -39,9 +39,9 @@ async function startTui(notesDir: string): Promise<void> {
     process.exit(1);
   };
 
-  process.on('SIGINT', handleSigInt);
-  process.on('SIGTERM', handleSigTerm);
-  process.on('uncaughtException', handleUncaughtException);
+  process.once('SIGINT', handleSigInt);
+  process.once('SIGTERM', handleSigTerm);
+  process.once('uncaughtException', handleUncaughtException);
 
   const noteService = new NoteService(notesDir);
   let editorFilePath: string | null = null;

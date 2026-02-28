@@ -8,6 +8,7 @@ import {
   formatIndicator,
   formatRuler,
 } from '../../theme/format.js';
+import { useLayoutContext } from '../hooks/layout-context.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { NoteListItem } from '../../types.js';
 
@@ -24,6 +25,7 @@ interface NoteListProps {
 
 export function NoteList({ title, items, nav }: NoteListProps): React.ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { contentWidth } = useLayoutContext();
 
   useInput((input, key) => {
     if (input === 'j' || key.downArrow) {
@@ -43,8 +45,8 @@ export function NoteList({ title, items, nav }: NoteListProps): React.ReactEleme
   });
 
   return (
-    <Box flexDirection="column" padding={1}>
-      <Text>{theme.bold(title)} {formatRuler(30)}</Text>
+    <Box flexDirection="column">
+      <Text>{theme.bold(title)} {formatRuler(Math.max(0, contentWidth - title.length - 1))}</Text>
       <Box flexDirection="column" marginTop={1}>
         {items.map((item, i) => {
           const isSelected = i === selectedIndex;

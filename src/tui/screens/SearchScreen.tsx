@@ -4,6 +4,7 @@ import { TextInput } from '@inkjs/ui';
 import { theme } from '../../theme/colors.js';
 import { formatTag, formatDate, formatRuler } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
+import { useLayoutContext } from '../hooks/layout-context.js';
 import type { NoteService } from '../../core/note-service.js';
 import type { SearchIndex } from '../../storage/search-index.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
@@ -40,6 +41,7 @@ export function SearchScreen({
 }: SearchScreenProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { contentWidth } = useLayoutContext();
 
   // 150ms debounce on query
   const debouncedQuery = useDebounce(query, DEBOUNCE_MS);
@@ -84,12 +86,12 @@ export function SearchScreen({
   }, []);
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column">
       <Box>
         <Text>  検索 {'>'} </Text>
         <TextInput placeholder="search notes..." onChange={handleChange} />
       </Box>
-      <Text>  {formatRuler(35)}</Text>
+      <Text>  {formatRuler(Math.max(0, contentWidth - 2))}</Text>
 
       {hint.length > 0 && (
         <Text dimColor>  {hint}</Text>

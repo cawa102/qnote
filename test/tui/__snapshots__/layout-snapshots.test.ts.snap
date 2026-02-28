@@ -1,0 +1,50 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Layout Snapshots > CenteredLayout at various terminal sizes > 25×15 minimal terminal — minimum contentWidth=20 1`] = `
+"  === Minimal ===
+  Sample content line"
+`;
+
+exports[`Layout Snapshots > CenteredLayout at various terminal sizes > 40×20 compact terminal — reduced content width, still centered 1`] = `
+"    === Compact ===
+    Sample content line"
+`;
+
+exports[`Layout Snapshots > CenteredLayout at various terminal sizes > 80×24 standard terminal — centers content with padding 1`] = `
+"    === Standard ===
+    Sample content line"
+`;
+
+exports[`Layout Snapshots > CenteredLayout at various terminal sizes > 120×40 wide terminal — content stays at maxWidth=100 1`] = `
+"          === Wide ===
+          Sample content line"
+`;
+
+exports[`Layout Snapshots > CenteredLayout at various terminal sizes > non-TTY — no centering, content is left-aligned 1`] = `
+"=== NonTTY ===
+Sample content line"
+`;
+
+exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 25×15 minimal — shows plain text fallback 1`] = `"Queen Note"`;
+
+exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 40×20 compact — shows plain text (columns < 60) 1`] = `"Queen Note"`;
+
+exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 80×24 standard — shows block art title 1`] = `
+"▄▄▄▄  █  █ █▀▀▀ █▀▀▀ █▄  █
+█  █  █  █ █    █    █ █ █
+█  █  █  █ █▀▀  █▀▀  █  ██
+█ ▄█  █  █ █    █    █  ▀█
+▀▄▄█  ▀▄▄▀ ▀▀▀▀ ▀▀▀▀ ▀   ▀
+
+N O T E"
+`;
+
+exports[`Layout Snapshots > TitleBanner snapshots at each terminal size > 120×40 wide — shows block art title 1`] = `
+"▄▄▄▄  █  █ █▀▀▀ █▀▀▀ █▄  █
+█  █  █  █ █    █    █ █ █
+█  █  █  █ █▀▀  █▀▀  █  ██
+█ ▄█  █  █ █    █    █  ▀█
+▀▄▄█  ▀▄▄▀ ▀▀▀▀ ▀▀▀▀ ▀   ▀
+
+N O T E"
+`;
