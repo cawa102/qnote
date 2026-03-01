@@ -26,3 +26,19 @@ export function formatIndicator(selected: boolean): string {
 export function formatRuler(width: number): string {
   return theme.dim('─'.repeat(width));
 }
+
+// --- Palette layout helpers ---
+
+export interface PaletteLayout {
+  readonly menuWidth: number;
+  readonly leftPad: number;
+  readonly showKeys: boolean;
+}
+
+export function computePaletteLayout(contentWidth: number): PaletteLayout {
+  const menuWidth = Math.max(44, Math.min(contentWidth - 8, 72));
+  const leftPad = Math.max(0, Math.floor((contentWidth - menuWidth) / 2));
+  const showKeys = contentWidth >= 50;
+  return { menuWidth, leftPad, showKeys };
+}
+

@@ -1,0 +1,32 @@
+CODEMAP DIFF REPORT
+===================
+Date: 2026-02-28 21:30 JST
+Previous commit: da41389
+Current commit:  a02370b
+
+Feature: Find File (ファイル検索) — fuzzy file name search from command palette
+
+Files Added:
+  - src/storage/file-scanner.ts (117 lines) — recursive .md scanner
+  - src/tui/screens/FindFileScreen.tsx (149 lines) — fuzzy search screen
+
+Files Modified:
+  - src/types.ts (+2 lines) — added 'findFile' to ScreenName/ScreenEntry
+  - src/tui/App.tsx (+12 lines) — routing for FindFileScreen
+  - src/tui/screens/CommandPalette.tsx (+2 lines) — 'find file' in palette
+  - src/tui/components/Footer.tsx (+1 line) — findFile hints
+  - src/storage/index.ts (+3 lines) — barrel exports for file-scanner
+
+Metrics:
+  Source files: 41 → 44 (+3)
+  Source lines: 4,863 → 5,081 (+218, +4.5%)
+  Test files:   38 → 40 (+2)
+  Test count:   553 → 586 (+33)
+  Screens:      6 → 7 (+FindFileScreen)
+
+Codemap Changes (diff %):
+  architecture.md: ~15% (navigation, storage, counts)
+  frontend.md:     ~12% (screens table, import graph)
+  backend.md:      ~8% (file-scanner section)
+  data.md:         ~6% (ScannedFile types, findFile ScreenEntry)
+  Overall:         ~10% (under 30% threshold — auto-updated)
