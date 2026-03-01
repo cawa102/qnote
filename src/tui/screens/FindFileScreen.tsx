@@ -122,8 +122,8 @@ export function FindFileScreen({
 
   return (
     <Box flexDirection="column">
-      <Box>
-        <Text>  ファイル検索 {'>'} </Text>
+      <Box borderStyle="bold" borderColor="#56b6c2">
+        <Text> ファイル検索 {'>'} </Text>
         <TextInput placeholder="search files..." onChange={handleChange} />
       </Box>
       <Text>  {formatRuler(Math.max(0, contentWidth - 2))}</Text>

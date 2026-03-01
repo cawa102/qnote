@@ -87,8 +87,8 @@ export function SearchScreen({
 
   return (
     <Box flexDirection="column">
-      <Box>
-        <Text>  検索 {'>'} </Text>
+      <Box borderStyle="bold" borderColor="#56b6c2">
+        <Text> 検索 {'>'} </Text>
         <TextInput placeholder="search notes..." onChange={handleChange} />
       </Box>
       <Text>  {formatRuler(Math.max(0, contentWidth - 2))}</Text>

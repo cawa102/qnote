@@ -1,6 +1,40 @@
-import { describe, it, expect } from 'vitest';
-import { buildDisplayEntries } from '../../src/tui/screens/FindFileScreen.js';
+import React from 'react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { render, cleanup } from 'ink-testing-library';
+import { Box } from 'ink';
+import { buildDisplayEntries, FindFileScreen } from '../../src/tui/screens/FindFileScreen.js';
+import { createNavigationStore } from '../../src/tui/hooks/use-navigation.js';
+import { createInputModeStore } from '../../src/tui/hooks/use-input-mode.js';
+import { LayoutProvider } from '../../src/tui/hooks/layout-context.js';
+import { stripAnsi } from '../helpers/strip-ansi.js';
 import type { ScannedFile } from '../../src/storage/file-scanner.js';
+
+vi.mock('../../src/storage/file-scanner.js', () => ({
+  scanNoteFiles: vi.fn().mockResolvedValue([]),
+}));
+
+function renderFindFile(width = 80) {
+  const nav = createNavigationStore();
+  const inputMode = createInputModeStore();
+
+  const instance = render(
+    React.createElement(
+      LayoutProvider,
+      null,
+      React.createElement(
+        Box,
+        { flexDirection: 'column' as const, width, height: 24 },
+        React.createElement(FindFileScreen, { notesDir: '/tmp/notes', nav, inputMode }),
+      ),
+    ),
+  );
+
+  return { ...instance, nav, inputMode };
+}
+
+afterEach(() => {
+  cleanup();
+});
 
 function makeFile(relativePath: string): ScannedFile {
   return {
@@ -76,5 +110,21 @@ describe('buildDisplayEntries', () => {
     const result = buildDisplayEntries(files, '日本語', false);
     expect(result.length).toBeGreaterThanOrEqual(1);
     expect(result.some((f) => f.relativePath === '日本語ノート.md')).toBe(true);
+  });
+});
+
+describe('FindFileScreen rendering', () => {
+  it('renders search input with bold border box', () => {
+    const { lastFrame } = renderFindFile();
+    const frame = stripAnsi(lastFrame() ?? '');
+    // Bold border box has corner characters ┏ and ┗ (not from ruler)
+    expect(frame).toContain('┏');
+    expect(frame).toContain('┗');
+  });
+
+  it('renders label text inside the bordered area', () => {
+    const { lastFrame } = renderFindFile();
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('ファイル検索');
   });
 });
