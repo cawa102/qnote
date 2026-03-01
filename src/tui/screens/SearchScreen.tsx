@@ -98,20 +98,25 @@ export function SearchScreen({
         {results.map((result, i) => {
           const isSelected = i === selectedIndex;
           return (
-            <Box key={result.filePath} flexDirection="column" marginBottom={1}>
-              <Text>
-                {'  '}{isSelected ? theme.selected('\u25cf') : theme.dim('\u25cb')}{' '}
-                {isSelected ? theme.accentBold(result.title) : result.title}
-              </Text>
-              <Text>
-                {'    '}{result.snippet}
-              </Text>
-              <Text>
-                {'    '}
-                {result.tags.map((t: string) => formatTag(t)).join('  ')}
-                {'  '}{formatDate(result.modified)}
-              </Text>
-            </Box>
+            <React.Fragment key={result.filePath}>
+              {i > 0 && (
+                <Text dimColor>{'\u2500'.repeat(contentWidth)}</Text>
+              )}
+              <Box flexDirection="column">
+                <Text>
+                  {'  '}{isSelected ? theme.selected('\u25cf') : theme.dim('\u25cb')}{' '}
+                  {isSelected ? theme.accentBold(result.title) : result.title}
+                </Text>
+                <Text>
+                  {'    '}{result.snippet}
+                </Text>
+                <Text>
+                  {'    '}
+                  {result.tags.map((t: string) => formatTag(t)).join('  ')}
+                  {'  '}{formatDate(result.modified)}
+                </Text>
+              </Box>
+            </React.Fragment>
           );
         })}
       </Box>
