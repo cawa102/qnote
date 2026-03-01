@@ -27,6 +27,10 @@ export function formatRuler(width: number): string {
   return theme.bold('─'.repeat(width));
 }
 
+export function formatDottedRuler(width: number): string {
+  return theme.dim('╌'.repeat(width));
+}
+
 // --- Palette layout helpers ---
 
 export interface PaletteLayout {

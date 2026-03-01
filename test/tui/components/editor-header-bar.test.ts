@@ -115,10 +115,10 @@ describe('EditorHeaderBar', () => {
   });
 
   describe('separator', () => {
-    it('renders separator line', () => {
+    it('renders dotted separator line', () => {
       const props = createProps({ width: 40 });
       const { lastFrame } = render(React.createElement(EditorHeaderBar, props));
-      expect(lastFrame()).toContain('─');
+      expect(lastFrame()).toContain('╌');
     });
   });
 
@@ -153,7 +153,7 @@ describe('EditorHeaderBar', () => {
       // Should have title, tags, and separator in the output
       expect(frame).toContain('Title:');
       expect(frame).toContain('Tags:');
-      expect(frame).toContain('─');
+      expect(frame).toContain('╌');
     });
   });
 });

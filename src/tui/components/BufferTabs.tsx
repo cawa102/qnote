@@ -143,12 +143,12 @@ export function BufferTabs({
     <Box width={width}>
       {showLeftEllipsis && <Text dimColor>{' ... '}</Text>}
       {visibleTabs.map((tab, index) => {
-        const style = tab.isActive ? theme.tabActive : theme.dim;
-        const globalIndex = start + index;
+        const style = tab.isActive ? theme.tabActive : theme.tabInactive;
+        const isLast = index === visibleTabs.length - 1;
         return (
           <Text key={tab.buffer.id}>
             {style(` ${tab.label} `)}
-            {globalIndex < end - 1 || showRightEllipsis ? '' : ''}
+            {!isLast ? theme.dim('│') : ''}
           </Text>
         );
       })}

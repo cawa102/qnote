@@ -14,6 +14,7 @@ import type { SaveStatus } from '../components/EditorHeaderBar.js';
 import { FileTree } from '../components/FileTree.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { theme } from '../../theme/colors.js';
+import { formatRuler } from '../../theme/format.js';
 import type { NoteService } from '../../core/note-service.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { InputModeStore } from '../hooks/use-input-mode.js';
@@ -27,6 +28,7 @@ interface EditorScreenProps {
   readonly inputMode: InputModeStore;
   readonly initialFilePath?: string;
   readonly showFileTree?: boolean;
+  readonly onFocusChange?: (focus: FocusArea) => void;
 }
 
 const MIN_TREE_WIDTH = 15;
@@ -181,13 +183,25 @@ export function EditorScreen({
   inputMode,
   initialFilePath,
   showFileTree: initialShowFileTree,
+  onFocusChange,
 }: EditorScreenProps): React.ReactElement {
   const { contentWidth, rows } = useLayoutContext();
 
   // Core state
   const [bufferManager, setBufferManager] = useState(() => BufferManager.create());
   const [mode, setMode] = useState<EditorMode>('edit');
-  const [focus, setFocus] = useState<FocusArea>('editor');
+  const [focus, setFocusRaw] = useState<FocusArea>('editor');
+
+  // Wrap setFocus to notify parent
+  const setFocus = useCallback((next: FocusArea | ((prev: FocusArea) => FocusArea)) => {
+    setFocusRaw((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      if (resolved !== prev) {
+        onFocusChange?.(resolved);
+      }
+      return resolved;
+    });
+  }, [onFocusChange]);
   const [fileTreeVisible, setFileTreeVisible] = useState(initialShowFileTree ?? false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -382,6 +396,7 @@ export function EditorScreen({
           setBufferManager((prev) =>
             prev.openBuffer(note.filePath, note.content, note.meta),
           );
+          setFileTreeVisible(false);
           setFocus('editor');
         }).catch((err: unknown) => {
           // H-1: Surface tree selection errors to user
@@ -497,6 +512,12 @@ export function EditorScreen({
 
     // Escape — back / confirmation
     if (key.escape) {
+      if (focus === 'fileTree') {
+        // Mirror Ctrl+E: hide tree and return to editor
+        setFileTreeVisible(false);
+        setFocus('editor');
+        return;
+      }
       if (focus !== 'editor') {
         setFocus('editor');
         return;
@@ -604,6 +625,9 @@ export function EditorScreen({
           activeId={active?.id ?? ''}
           width={editorWidth}
         />
+
+        {/* Separator between tabs and header */}
+        <Text>{formatRuler(editorWidth)}</Text>
 
         {/* Header bar (only when a buffer is active) */}
         {active && (

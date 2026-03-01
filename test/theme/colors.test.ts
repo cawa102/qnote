@@ -7,6 +7,7 @@ import {
   formatBacklinks,
   formatIndicator,
   formatRuler,
+  formatDottedRuler,
 } from '../../src/theme/format.js';
 
 describe('theme', () => {
@@ -23,12 +24,13 @@ describe('theme', () => {
     expect(typeof theme.heading).toBe('function');
     expect(typeof theme.keyBadge).toBe('function');
     expect(typeof theme.tabActive).toBe('function');
+    expect(typeof theme.tabInactive).toBe('function');
   });
 
   it('returns strings from all color functions', () => {
     const keys: readonly (keyof Theme)[] = [
       'accent', 'accentBold', 'tag', 'link', 'dim',
-      'error', 'warning', 'selected', 'bold', 'heading', 'keyBadge', 'tabActive',
+      'error', 'warning', 'selected', 'bold', 'heading', 'keyBadge', 'tabActive', 'tabInactive',
     ] as const;
 
     for (const key of keys) {
@@ -69,10 +71,20 @@ describe('theme', () => {
   });
 
   it('tabActive is a distinct theme function from selected', () => {
-    // tabActive uses inverse green bg (bgGreen.black or bgHex),
-    // while selected uses green bold text — they are different functions
     expect(theme.tabActive).not.toBe(theme.selected);
     expect(theme.tabActive).not.toBe(theme.dim);
+  });
+
+  it('tabInactive returns a non-empty string containing input text', () => {
+    const result = theme.tabInactive('Bg Tab');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).toContain('Bg Tab');
+  });
+
+  it('tabInactive is distinct from tabActive and dim', () => {
+    expect(theme.tabInactive).not.toBe(theme.tabActive);
+    expect(theme.tabInactive).not.toBe(theme.dim);
   });
 });
 
@@ -153,5 +165,16 @@ describe('formatRuler', () => {
     // The styled string may still have ANSI codes, but the ruler content is empty
     expect(result).toContain('');
   });
+});
 
+describe('formatDottedRuler', () => {
+  it('returns a dotted line of specified width', () => {
+    const result = formatDottedRuler(10);
+    expect(result).toContain('╌'.repeat(10));
+  });
+
+  it('returns empty ruler for zero width', () => {
+    const result = formatDottedRuler(0);
+    expect(result).toContain('');
+  });
 });

@@ -116,6 +116,36 @@ describe('BufferTabs', () => {
     expect(output).toBeDefined();
   });
 
+  it('renders separator between adjacent tabs', () => {
+    const buffers = [
+      makeBuffer({ id: 'a', title: 'Alpha' }),
+      makeBuffer({ id: 'b', title: 'Beta' }),
+      makeBuffer({ id: 'c', title: 'Gamma' }),
+    ];
+    const { lastFrame } = render(
+      React.createElement(BufferTabs, {
+        buffers,
+        activeId: 'a',
+        width: 80,
+      }),
+    );
+    const output = lastFrame();
+    expect(output).toContain('│');
+  });
+
+  it('does not render separator after last visible tab', () => {
+    const buffers = [makeBuffer({ id: 'a', title: 'Solo' })];
+    const { lastFrame } = render(
+      React.createElement(BufferTabs, {
+        buffers,
+        activeId: 'a',
+        width: 60,
+      }),
+    );
+    const output = lastFrame();
+    expect(output).not.toContain('│');
+  });
+
   it('shows [+] button', () => {
     const buffers = [makeBuffer()];
     const { lastFrame } = render(

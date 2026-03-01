@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { ScreenName, HintEntry } from '../../types.js';
+import type { FocusArea } from '../editor/types.js';
 import { theme } from '../../theme/colors.js';
 
 const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
@@ -40,15 +41,31 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: '^S', desc: 'save' },
     { key: '^P', desc: 'preview' },
     { key: '^E', desc: 'tree' },
-    { key: '^→/←', desc: 'tab' },
+    { key: '^ shift →/←', desc: 'tab' },
     { key: '^T', desc: 'title' },
     { key: '^G', desc: 'tags' },
     { key: 'Esc', desc: 'back' },
   ],
 };
 
-export function getHintsForScreen(screen: ScreenName): readonly HintEntry[] {
-  return HINTS[screen];
+export function getHintsForScreen(screen: ScreenName, focus?: FocusArea): readonly HintEntry[] {
+  const base = HINTS[screen];
+  if (screen !== 'editor' || !focus) return base;
+
+  const inHeader = focus === 'headerTitle' || focus === 'headerTags';
+  const inTree = focus === 'fileTree';
+  if (!inHeader && !inTree) return base;
+
+  // Swap "Esc: back" → "Esc: editor" when not in editor body
+  const swapped = base.map((entry) =>
+    entry.key === 'Esc' ? { key: 'Esc', desc: 'editor' } : entry,
+  );
+
+  if (focus === 'headerTitle') {
+    return [{ key: 'Enter', desc: 'done' }, ...swapped];
+  }
+
+  return swapped;
 }
 
 export function formatHintEntry(entry: HintEntry): string {
@@ -61,10 +78,11 @@ export function formatHints(entries: readonly HintEntry[]): string {
 
 interface FooterProps {
   readonly screen: ScreenName;
+  readonly focus?: FocusArea;
 }
 
-export function Footer({ screen }: FooterProps): React.ReactElement {
-  const entries = getHintsForScreen(screen);
+export function Footer({ screen, focus }: FooterProps): React.ReactElement {
+  const entries = getHintsForScreen(screen, focus);
   return (
     <Box>
       <Text>{formatHints(entries)}</Text>

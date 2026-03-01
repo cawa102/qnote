@@ -53,6 +53,9 @@ function AppContent({
     () => inputModeStore.current(),
   );
 
+  // Editor focus state for context-aware footer hints
+  const [editorFocus, setEditorFocus] = useState<import('../tui/editor/types.js').FocusArea>('editor');
+
   // State for screens that need loaded data
   const [previewNote, setPreviewNote] = useState<Note | null>(null);
   const [noteListItems, setNoteListItems] = useState<readonly NoteListItem[]>([]);
@@ -234,13 +237,17 @@ function AppContent({
                 inputMode={inputModeStore}
                 initialFilePath={currentEntry.filePath}
                 showFileTree={currentEntry.showFileTree}
+                onFocusChange={setEditorFocus}
               />
             )}
           </Box>
         </CenteredLayout>
       </Box>
       <CenteredLayout>
-        <Footer screen={currentEntry.screen} />
+        <Footer
+          screen={currentEntry.screen}
+          focus={currentEntry.screen === 'editor' ? editorFocus : undefined}
+        />
       </CenteredLayout>
     </Box>
   );

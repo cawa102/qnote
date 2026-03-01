@@ -41,16 +41,16 @@ describe('getHintsForScreen', () => {
     expect(keys).toContain('^E');
   });
 
-  it('editor hints contain ^→/← tab switching entry', () => {
+  it('editor hints contain tab switching entry', () => {
     const hints = getHintsForScreen('editor');
-    expect(hints).toContainEqual({ key: '^→/←', desc: 'tab' });
+    expect(hints).toContainEqual({ key: '^ shift →/←', desc: 'tab' });
   });
 
-  it('editor ^→/← hint is positioned between ^E and ^T', () => {
+  it('editor tab switching hint is positioned between ^E and ^T', () => {
     const hints = getHintsForScreen('editor');
     const keys = hints.map((h) => h.key);
     const eIndex = keys.indexOf('^E');
-    const tabIndex = keys.indexOf('^→/←');
+    const tabIndex = keys.indexOf('^ shift →/←');
     const tIndex = keys.indexOf('^T');
     expect(tabIndex).toBeGreaterThan(eIndex);
     expect(tabIndex).toBeLessThan(tIndex);
@@ -77,6 +77,48 @@ describe('getHintsForScreen', () => {
     expect(hints).toContainEqual({ key: 'q', desc: 'quit' });
     const keys = hints.map((h) => h.key);
     expect(keys).not.toContain('^Q');
+  });
+
+  describe('editor hints with focus context', () => {
+    it('shows "Esc: editor" when focus is headerTitle', () => {
+      const hints = getHintsForScreen('editor', 'headerTitle');
+      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
+      const keys = hints.map((h) => h.key);
+      // Should not contain the default "back" for Esc
+      const escEntry = hints.find((h) => h.key === 'Esc');
+      expect(escEntry?.desc).toBe('editor');
+    });
+
+    it('shows "Esc: editor" when focus is headerTags', () => {
+      const hints = getHintsForScreen('editor', 'headerTags');
+      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
+    });
+
+    it('shows "Esc: back" when focus is editor (default)', () => {
+      const hints = getHintsForScreen('editor', 'editor');
+      expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
+    });
+
+    it('shows "Esc: back" when no focus provided', () => {
+      const hints = getHintsForScreen('editor');
+      expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
+    });
+
+    it('shows "Enter: done" when focus is headerTitle', () => {
+      const hints = getHintsForScreen('editor', 'headerTitle');
+      expect(hints).toContainEqual({ key: 'Enter', desc: 'done' });
+    });
+
+    it('does not show "Enter: done" when focus is editor', () => {
+      const hints = getHintsForScreen('editor', 'editor');
+      const enterEntry = hints.find((h) => h.key === 'Enter');
+      expect(enterEntry).toBeUndefined();
+    });
+
+    it('shows "Esc: editor" when focus is fileTree', () => {
+      const hints = getHintsForScreen('editor', 'fileTree');
+      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
+    });
   });
 });
 
