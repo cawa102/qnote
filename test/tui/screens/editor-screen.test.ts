@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { yamlQuote } from '../../../src/tui/screens/EditorScreen.js';
+import { yamlQuote, getNextHeaderFocus } from '../../../src/tui/screens/EditorScreen.js';
+import type { FocusArea } from '../../../src/tui/editor/types.js';
 
 describe('EditorScreen', () => {
   it('exports EditorScreen component', async () => {
@@ -12,6 +13,40 @@ describe('EditorScreen module structure', () => {
   it('EditorScreen is a React function component', async () => {
     const mod = await import('../../../src/tui/screens/EditorScreen.js');
     expect(mod.EditorScreen.name).toBe('EditorScreen');
+  });
+});
+
+describe('getNextHeaderFocus', () => {
+  it('returns headerTitle when Ctrl+T is pressed from editor', () => {
+    expect(getNextHeaderFocus('editor', 't')).toBe('headerTitle');
+  });
+
+  it('returns headerTitle when Ctrl+T is pressed from headerTags', () => {
+    expect(getNextHeaderFocus('headerTags', 't')).toBe('headerTitle');
+  });
+
+  it('returns headerTags when Ctrl+G is pressed from editor', () => {
+    expect(getNextHeaderFocus('editor', 'g')).toBe('headerTags');
+  });
+
+  it('returns headerTags when Ctrl+G is pressed from headerTitle', () => {
+    expect(getNextHeaderFocus('headerTitle', 'g')).toBe('headerTags');
+  });
+
+  it('returns headerTitle when Ctrl+T pressed while already on headerTitle (idempotent)', () => {
+    expect(getNextHeaderFocus('headerTitle', 't')).toBe('headerTitle');
+  });
+
+  it('returns headerTags when Ctrl+G pressed while already on headerTags (idempotent)', () => {
+    expect(getNextHeaderFocus('headerTags', 'g')).toBe('headerTags');
+  });
+
+  it('returns null for unrecognized key', () => {
+    expect(getNextHeaderFocus('editor', 'x')).toBeNull();
+  });
+
+  it('returns null from fileTree focus', () => {
+    expect(getNextHeaderFocus('fileTree', 't')).toBeNull();
   });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -32,6 +32,17 @@ interface EditorScreenProps {
 const MIN_TREE_WIDTH = 15;
 const MAX_TREE_WIDTH = 30;
 const TREE_WIDTH_RATIO = 0.25;
+
+/**
+ * Determine the next focus area when a Ctrl key is pressed for header editing.
+ * Returns null if the key doesn't correspond to a header focus action.
+ */
+export function getNextHeaderFocus(current: FocusArea, key: string): FocusArea | null {
+  if (current === 'fileTree') return null;
+  if (key === 't') return 'headerTitle';
+  if (key === 'g') return 'headerTags';
+  return null;
+}
 
 /**
  * Escape a string for safe inclusion in YAML scalar values.
@@ -85,6 +96,10 @@ export function EditorScreen({
   // Title/tags state for header bar
   const [headerTitle, setHeaderTitle] = useState('');
   const [headerTags, setHeaderTags] = useState<readonly string[]>([]);
+
+  // Suppress spurious TextInput onChange during Ctrl+key focus transitions.
+  // @inkjs/ui TextInput doesn't filter Ctrl+T/G, so the character leaks into the input.
+  const suppressHeaderChangeRef = useRef(false);
 
   // Set input mode on mount
   useEffect(() => {
@@ -345,6 +360,19 @@ export function EditorScreen({
         }
         return;
       }
+      // Ctrl+T — focus title header / Ctrl+G — focus tags header
+      if (mode === 'edit') {
+        const nextFocus = getNextHeaderFocus(focus, input);
+        if (nextFocus) {
+          // Suppress the next TextInput onChange to prevent character leakage.
+          // @inkjs/ui's TextInput doesn't filter Ctrl+T/G and would insert
+          // the character into the input field.
+          suppressHeaderChangeRef.current = true;
+          setTimeout(() => { suppressHeaderChangeRef.current = false; }, 0);
+          setFocus(nextFocus);
+          return;
+        }
+      }
     }
 
     // Escape — back / confirmation
@@ -442,8 +470,12 @@ export function EditorScreen({
           mode={mode}
           width={editorWidth}
           focused={focus}
-          onTitleChange={setHeaderTitle}
-          onTagsChange={setHeaderTags}
+          onTitleChange={(value) => {
+            if (!suppressHeaderChangeRef.current) setHeaderTitle(value);
+          }}
+          onTagsChange={(tags) => {
+            if (!suppressHeaderChangeRef.current) setHeaderTags(tags);
+          }}
           onFocusEditor={() => setFocus('editor')}
         />
 

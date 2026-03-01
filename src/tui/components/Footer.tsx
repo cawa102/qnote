@@ -9,7 +9,7 @@ const HINTS: Readonly<Record<ScreenName, string>> = {
   notePreview: 'e edit   p raw   : cmd   Esc back',
   search: '↑↓ select   Enter open   Esc cancel',
   capture: 'Ctrl+S save   Esc cancel',
-  editor: 'Ctrl+S save   Ctrl+P preview   Ctrl+E tree   Esc back',
+  editor: '^S save  ^P preview  ^E tree  ^T title  ^G tags  Esc back',
 };
 
 export function getHintsForScreen(screen: ScreenName): string {

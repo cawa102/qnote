@@ -42,8 +42,15 @@ describe('getHintsForScreen', () => {
     expect(hints).toContain('Esc');
   });
 
+  it('returns editor hints with header editing shortcuts', () => {
+    const hints = getHintsForScreen('editor');
+    expect(hints).toContain('^T title');
+    expect(hints).toContain('^G tags');
+    expect(hints).toContain('^E tree');
+  });
+
   it('returns a string for every screen name', () => {
-    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture'];
+    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor'];
     for (const screen of screens) {
       const hints = getHintsForScreen(screen);
       expect(typeof hints).toBe('string');
