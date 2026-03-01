@@ -21,12 +21,13 @@ describe('theme', () => {
     expect(typeof theme.selected).toBe('function');
     expect(typeof theme.bold).toBe('function');
     expect(typeof theme.heading).toBe('function');
+    expect(typeof theme.keyBadge).toBe('function');
   });
 
   it('returns strings from all color functions', () => {
     const keys: readonly (keyof Theme)[] = [
       'accent', 'accentBold', 'tag', 'link', 'dim',
-      'error', 'warning', 'selected', 'bold', 'heading',
+      'error', 'warning', 'selected', 'bold', 'heading', 'keyBadge',
     ] as const;
 
     for (const key of keys) {
@@ -46,6 +47,17 @@ describe('theme', () => {
   it('satisfies the Theme interface', () => {
     const t: Theme = theme;
     expect(t).toBeDefined();
+  });
+
+  it('keyBadge returns a non-empty string', () => {
+    const result = theme.keyBadge('Enter');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('keyBadge contains the input text', () => {
+    expect(theme.keyBadge('q')).toContain('q');
+    expect(theme.keyBadge('Enter')).toContain('Enter');
   });
 });
 

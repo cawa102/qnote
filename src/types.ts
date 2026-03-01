@@ -136,6 +136,11 @@ export interface BackLink {
 
 export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor';
 
+export interface HintEntry {
+  readonly key: string;
+  readonly desc: string;
+}
+
 export type ScreenEntry =
   | { readonly screen: 'palette' }
   | { readonly screen: 'noteList'; readonly filter?: string; readonly tag?: string }

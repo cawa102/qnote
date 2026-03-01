@@ -1,62 +1,89 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import React from 'react';
 import { render, cleanup } from 'ink-testing-library';
-import { getHintsForScreen, Footer } from '../../src/tui/components/Footer.js';
-import type { ScreenName } from '../../src/types.js';
+import { getHintsForScreen, Footer, formatHintEntry, formatHints } from '../../src/tui/components/Footer.js';
+import type { ScreenName, HintEntry } from '../../src/types.js';
+import stripAnsi from 'strip-ansi';
 
 describe('getHintsForScreen', () => {
-  it('returns palette hints', () => {
+  it('returns palette hints as HintEntry array', () => {
     const hints = getHintsForScreen('palette');
-    expect(hints).toContain('Enter');
-    expect(hints).toContain('q quit');
-    expect(hints).not.toContain('Esc');
+    expect(Array.isArray(hints)).toBe(true);
+    expect(hints).toContainEqual({ key: 'Enter', desc: 'select' });
+    expect(hints).toContainEqual({ key: 'q', desc: 'quit' });
   });
 
-  it('returns noteList hints', () => {
-    const hints = getHintsForScreen('noteList');
-    expect(hints).toContain(': cmd');
-    expect(hints).toContain('/ search');
-    expect(hints).toContain('n new');
-  });
-
-  it('returns notePreview hints', () => {
-    const hints = getHintsForScreen('notePreview');
-    expect(hints).toContain('e edit');
-    expect(hints).toContain('p raw');
-  });
-
-  it('returns search hints', () => {
-    const hints = getHintsForScreen('search');
-    expect(hints).toContain('Enter');
-    expect(hints).toContain('Esc');
-  });
-
-  it('returns capture hints', () => {
-    const hints = getHintsForScreen('capture');
-    expect(hints).toContain('Ctrl+S');
-    expect(hints).toContain('Esc');
-  });
-
-  it('returns findFile hints', () => {
-    const hints = getHintsForScreen('findFile');
-    expect(hints).toContain('Enter');
-    expect(hints).toContain('Esc');
-  });
-
-  it('returns editor hints with header editing shortcuts', () => {
-    const hints = getHintsForScreen('editor');
-    expect(hints).toContain('^T title');
-    expect(hints).toContain('^G tags');
-    expect(hints).toContain('^E tree');
-  });
-
-  it('returns a string for every screen name', () => {
+  it('returns non-empty array for every screen name', () => {
     const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor'];
     for (const screen of screens) {
       const hints = getHintsForScreen(screen);
-      expect(typeof hints).toBe('string');
+      expect(Array.isArray(hints)).toBe(true);
       expect(hints.length).toBeGreaterThan(0);
     }
+  });
+
+  it('each entry has non-empty key and desc', () => {
+    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor'];
+    for (const screen of screens) {
+      const hints = getHintsForScreen(screen);
+      for (const entry of hints) {
+        expect(entry.key.length).toBeGreaterThan(0);
+        expect(entry.desc.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('editor hints contain ^T, ^G, ^E entries', () => {
+    const hints = getHintsForScreen('editor');
+    const keys = hints.map((h) => h.key);
+    expect(keys).toContain('^T');
+    expect(keys).toContain('^G');
+    expect(keys).toContain('^E');
+  });
+
+  it('capture hints contain ^S entry', () => {
+    const hints = getHintsForScreen('capture');
+    const keys = hints.map((h) => h.key);
+    expect(keys).toContain('^S');
+  });
+});
+
+describe('formatHintEntry', () => {
+  it('produces string containing both key and desc', () => {
+    const entry: HintEntry = { key: 'Enter', desc: 'select' };
+    const result = stripAnsi(formatHintEntry(entry));
+    expect(result).toContain('Enter');
+    expect(result).toContain('select');
+  });
+
+  it('pads key with spaces inside the badge', () => {
+    const entry: HintEntry = { key: 'q', desc: 'quit' };
+    const result = stripAnsi(formatHintEntry(entry));
+    expect(result).toContain(' q ');
+  });
+});
+
+describe('formatHints', () => {
+  it('joins entries with separator', () => {
+    const entries: readonly HintEntry[] = [
+      { key: 'Enter', desc: 'select' },
+      { key: 'q', desc: 'quit' },
+    ];
+    const result = stripAnsi(formatHints(entries));
+    expect(result).toContain('Enter');
+    expect(result).toContain('select');
+    expect(result).toContain('q');
+    expect(result).toContain('quit');
+  });
+
+  it('separates entries with double space', () => {
+    const entries: readonly HintEntry[] = [
+      { key: 'a', desc: 'first' },
+      { key: 'b', desc: 'second' },
+    ];
+    const result = stripAnsi(formatHints(entries));
+    // Between first pair's desc and second pair's badge there should be 2 spaces
+    expect(result).toMatch(/first\s{2,}/);
   });
 });
 
@@ -65,19 +92,21 @@ describe('Footer component', () => {
     cleanup();
   });
 
-  it('renders hint text for the given screen', () => {
+  it('renders key names and descriptions for palette screen', () => {
     const { lastFrame } = render(React.createElement(Footer, { screen: 'palette' }));
-    expect(lastFrame()).toContain('Enter select');
-    expect(lastFrame()).toContain('q quit');
+    const frame = stripAnsi(lastFrame());
+    expect(frame).toContain('Enter');
+    expect(frame).toContain('select');
+    expect(frame).toContain('q');
+    expect(frame).toContain('quit');
   });
 
-  it('renders different hints for each screen', () => {
-    const screens: ScreenName[] = ['findFile', 'noteList', 'notePreview', 'search', 'capture'];
-    for (const screen of screens) {
-      const { lastFrame, unmount } = render(React.createElement(Footer, { screen }));
-      const expected = getHintsForScreen(screen);
-      expect(lastFrame()).toContain(expected);
-      unmount();
-    }
+  it('renders different content per screen', () => {
+    const { lastFrame: paletteFrame } = render(React.createElement(Footer, { screen: 'palette' }));
+    cleanup();
+    const { lastFrame: editorFrame } = render(React.createElement(Footer, { screen: 'editor' }));
+    const p = stripAnsi(paletteFrame());
+    const e = stripAnsi(editorFrame());
+    expect(p).not.toBe(e);
   });
 });

@@ -1,7 +1,7 @@
 export { App } from './App.js';
 export { createNavigationStore } from './hooks/use-navigation.js';
 export type { NavigationStore, ScreenEntry } from './hooks/use-navigation.js';
-export { Footer, getHintsForScreen } from './components/Footer.js';
+export { Footer, getHintsForScreen, formatHintEntry, formatHints } from './components/Footer.js';
 export { debounce, useDebounce } from './hooks/use-debounce.js';
 export { CommandPalette, PALETTE_COMMANDS } from './screens/CommandPalette.js';
 export type { PaletteCommand } from './screens/CommandPalette.js';
