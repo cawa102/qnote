@@ -1,9 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { TextInput } from '@inkjs/ui';
-import Fuse from 'fuse.js';
+import { formatRuler, computePaletteLayout, formatIndicator } from '../../theme/format.js';
 import { theme } from '../../theme/colors.js';
-import { formatRuler } from '../../theme/format.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { TitleBanner } from '../components/TitleBanner.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
@@ -11,68 +9,55 @@ import type { InputModeStore } from '../hooks/use-input-mode.js';
 
 export interface PaletteCommand {
   readonly label: string;
-  readonly description: string;
+  readonly key: string;
   readonly action: string;
 }
 
 export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
-  { label: 'new note', description: 'ノート作成', action: 'new' },
-  { label: 'find file', description: 'ファイル名で検索', action: 'findFile' },
-  { label: 'search', description: '本文の全文検索', action: 'search' },
-  { label: 'daily', description: 'デイリーノート', action: 'daily' },
-  { label: 'recent', description: '最近のノート', action: 'recent' },
-  { label: 'capture', description: 'クイックメモ', action: 'capture' },
-  { label: 'tags', description: 'タグ一覧', action: 'tags' },
+  { label: 'new note',  key: 'n', action: 'new' },
+  { label: 'find file', key: 'f', action: 'findFile' },
+  { label: 'search',    key: 's', action: 'search' },
+  { label: 'daily',     key: 'd', action: 'daily' },
+  { label: 'recent',    key: 'r', action: 'recent' },
+  { label: 'capture',   key: 'c', action: 'capture' },
+  { label: 'tags',      key: 't', action: 'tags' },
 ];
-
-const fuse = new Fuse([...PALETTE_COMMANDS], {
-  keys: ['label', 'description'],
-  threshold: 0.4,
-});
-
-export function filterCommands(
-  commands: readonly PaletteCommand[],
-  query: string,
-): PaletteCommand[] {
-  if (query.trim() === '') return [...commands];
-  return fuse.search(query).map((r) => r.item);
-}
 
 interface CommandPaletteProps {
   readonly nav: NavigationStore;
   readonly inputMode: InputModeStore;
-  readonly onAction: (action: string, query: string) => void;
+  readonly onAction: (action: string) => void;
 }
 
-export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): React.ReactElement {
-  const [query, setQuery] = useState('');
+export function CommandPalette({ onAction }: CommandPaletteProps): React.ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const filtered = filterCommands(PALETTE_COMMANDS, query);
   const { contentWidth, showTitleArt } = useLayoutContext();
+  const layout = useMemo(
+    () => computePaletteLayout(contentWidth),
+    [contentWidth],
+  );
 
-  const handleChange = useCallback((value: string) => {
-    setQuery(value);
-    setSelectedIndex(0);
-  }, []);
-
-  // Set input mode to text on mount to prevent global key interference
-  React.useEffect(() => {
-    inputMode.set('text');
-    return () => inputMode.set('navigation');
-  }, [inputMode]);
-
-  useInput((_input, key) => {
+  useInput((input, key) => {
     if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, PALETTE_COMMANDS.length - 1));
+      return;
     }
     if (key.upArrow) {
       setSelectedIndex((i) => Math.max(i - 1, 0));
+      return;
     }
-    if (key.return && filtered.length > 0) {
-      const cmd = filtered[selectedIndex];
+    if (key.return) {
+      const cmd = PALETTE_COMMANDS[selectedIndex];
       if (cmd) {
-        onAction(cmd.action, query);
+        onAction(cmd.action);
       }
+      return;
+    }
+
+    // Shortcut key handling
+    const matched = PALETTE_COMMANDS.find((cmd) => cmd.key === input);
+    if (matched && !key.ctrl && !key.meta) {
+      onAction(matched.action);
     }
   });
 
@@ -80,26 +65,21 @@ export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): Re
     <Box flexDirection="column">
       <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
       <Text>{formatRuler(contentWidth)}</Text>
-      <Box marginTop={1}>
-        <Text>{'  > '}</Text>
-        <TextInput
-          placeholder="type a command..."
-          onChange={handleChange}
-        />
-      </Box>
-      <Box flexDirection="column" marginTop={1}>
-        {filtered.map((cmd, i) => (
-          <Box key={cmd.action}>
-            <Text>
-              {'  '}
-              {i === selectedIndex
-                ? theme.selected(`● ${cmd.label}`)
-                : theme.dim(`○ ${cmd.label}`)}
-              {'  '}
-            </Text>
-            <Text dimColor>{cmd.description}</Text>
-          </Box>
-        ))}
+      <Box flexDirection="column" marginTop={1} paddingLeft={layout.leftPad}>
+        {PALETTE_COMMANDS.map((cmd, i) => {
+          const isSelected = i === selectedIndex;
+          return (
+            <Box key={cmd.action} width={layout.menuWidth}>
+              <Text>
+                {formatIndicator(isSelected) + ' ' + (isSelected ? theme.selected(cmd.label) : theme.dim(cmd.label))}
+              </Text>
+              <Box flexGrow={1} />
+              {layout.showKeys && (
+                <Text>{theme.accent(cmd.key)}</Text>
+              )}
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );

@@ -73,7 +73,7 @@ function AppContent({
 
   // Handle command palette action
   const handleAction = useCallback(
-    (action: string, query: string) => {
+    (action: string) => {
       switch (action) {
         case 'recent': {
           const items = noteService.listRecent(20);
@@ -103,7 +103,7 @@ function AppContent({
           break;
 
         case 'new': {
-          const title = query.trim() || 'untitled';
+          const title = 'untitled';
           noteService
             .create({
               title,

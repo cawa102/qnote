@@ -2,25 +2,26 @@ import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from 'ink-testing-library';
 import { Box } from 'ink';
-import { CommandPalette } from '../../src/tui/screens/CommandPalette.js';
+import stringWidth from 'string-width';
+import { CommandPalette, PALETTE_COMMANDS } from '../../src/tui/screens/CommandPalette.js';
 import { createNavigationStore } from '../../src/tui/hooks/use-navigation.js';
 import { createInputModeStore } from '../../src/tui/hooks/use-input-mode.js';
 import { LayoutProvider } from '../../src/tui/hooks/layout-context.js';
+import { stripAnsi } from '../helpers/strip-ansi.js';
 
-// Terminal escape sequences
 const ARROW_DOWN = '\x1b[B';
 const ARROW_UP = '\x1b[A';
-const BACKSPACE = '\x7f';
+const ENTER = '\r';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function renderPalette() {
+function renderPalette(width = 80) {
   const nav = createNavigationStore();
   const inputMode = createInputModeStore();
   const actions: string[] = [];
-  const onAction = (action: string, _query: string) => {
+  const onAction = (action: string) => {
     actions.push(action);
   };
 
@@ -30,7 +31,7 @@ function renderPalette() {
       null,
       React.createElement(
         Box,
-        { flexDirection: 'column' as const, width: 80, height: 24 },
+        { flexDirection: 'column' as const, width, height: 24 },
         React.createElement(CommandPalette, { nav, inputMode, onAction }),
       ),
     ),
@@ -43,88 +44,58 @@ afterEach(() => {
   cleanup();
 });
 
-describe('CommandPalette input integration', () => {
-  it('arrow keys work without any typing', async () => {
-    const { stdin, lastFrame } = renderPalette();
+describe('CommandPalette shortcut keys', () => {
+  it('pressing "n" fires onAction("new")', async () => {
+    const { stdin, actions } = renderPalette();
     await delay(50);
-
-    const frameBefore = lastFrame();
-    expect(frameBefore).toContain('new note');
-
-    // Press down arrow
-    stdin.write(ARROW_DOWN);
+    stdin.write('n');
     await delay(50);
-
-    const frameAfter = lastFrame();
-    // 'find file' should now have the selected indicator (index 1)
-    expect(frameAfter).toMatch(/● find file/);
+    expect(actions).toEqual(['new']);
   });
 
-  it('arrow keys work after typing and deleting text (BUG REPRO)', async () => {
-    const { stdin, lastFrame } = renderPalette();
+  it('pressing "f" fires onAction("findFile")', async () => {
+    const { stdin, actions } = renderPalette();
     await delay(50);
-
-    // Type 'test'
-    stdin.write('t');
+    stdin.write('f');
     await delay(50);
-    stdin.write('e');
-    await delay(50);
-    stdin.write('s');
-    await delay(50);
-    stdin.write('t');
-    await delay(50);
-
-    // Delete 'test' (4 backspaces)
-    stdin.write(BACKSPACE);
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-
-    // All commands should be visible again
-    const frameAfterDelete = lastFrame();
-    expect(frameAfterDelete).toContain('new note');
-    expect(frameAfterDelete).toContain('daily');
-
-    // Press down arrow to move to 'find file'
-    stdin.write(ARROW_DOWN);
-    await delay(50);
-
-    const frame1 = lastFrame();
-    expect(frame1).toMatch(/● find file/);
-
-    // Press down arrow again to move to 'search'
-    stdin.write(ARROW_DOWN);
-    await delay(50);
-
-    const frame2 = lastFrame();
-    expect(frame2).toMatch(/● search/);
+    expect(actions).toEqual(['findFile']);
   });
 
-  it('arrow keys work after typing 3 chars and deleting 3', async () => {
+  it('all 7 shortcut keys fire correct actions', async () => {
+    const expected: [string, string][] = [
+      ['n', 'new'],
+      ['f', 'findFile'],
+      ['s', 'search'],
+      ['d', 'daily'],
+      ['r', 'recent'],
+      ['c', 'capture'],
+      ['t', 'tags'],
+    ];
+
+    for (const [key, action] of expected) {
+      const { stdin, actions } = renderPalette();
+      await delay(50);
+      stdin.write(key);
+      await delay(50);
+      expect(actions).toEqual([action]);
+      cleanup();
+    }
+  });
+
+  it('pressing undefined key "x" does not fire onAction', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+    stdin.write('x');
+    await delay(50);
+    expect(actions).toEqual([]);
+  });
+});
+
+describe('CommandPalette cursor navigation', () => {
+  it('arrow down moves selection', async () => {
     const { stdin, lastFrame } = renderPalette();
     await delay(50);
 
-    // Type 'abc'
-    stdin.write('a');
-    await delay(50);
-    stdin.write('b');
-    await delay(50);
-    stdin.write('c');
-    await delay(50);
-
-    // Delete 'abc' (3 backspaces)
-    stdin.write(BACKSPACE);
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-
-    // Press down arrow
     stdin.write(ARROW_DOWN);
     await delay(50);
 
@@ -132,31 +103,100 @@ describe('CommandPalette input integration', () => {
     expect(frame).toMatch(/● find file/);
   });
 
-  it('arrow up works after typing and deleting', async () => {
+  it('arrow up from second item returns to first', async () => {
     const { stdin, lastFrame } = renderPalette();
     await delay(50);
 
-    // Move down twice first
     stdin.write(ARROW_DOWN);
     await delay(50);
-    stdin.write(ARROW_DOWN);
+    stdin.write(ARROW_UP);
     await delay(50);
 
-    // Should be on 'search' (index 2: new note, find file, search)
-    expect(lastFrame()).toMatch(/● search/);
-
-    // Type something and delete
-    stdin.write('x');
-    await delay(50);
-    stdin.write(BACKSPACE);
-    await delay(50);
-
-    // Try arrow down
-    stdin.write(ARROW_DOWN);
-    await delay(50);
-
-    // Should be able to navigate (● should be on some item)
     const frame = lastFrame();
-    expect(frame).toContain('●');
+    expect(frame).toMatch(/● new note/);
+  });
+
+  it('Enter selects the current item', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Move to 'find file' (index 1) and press Enter
+    stdin.write(ARROW_DOWN);
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['findFile']);
+  });
+
+  it('arrow up at top stays at first item', async () => {
+    const { stdin, lastFrame } = renderPalette();
+    await delay(50);
+
+    stdin.write(ARROW_UP);
+    await delay(50);
+
+    const frame = lastFrame();
+    expect(frame).toMatch(/● new note/);
+  });
+});
+
+describe('CommandPalette layout alignment', () => {
+  it('aligns all selection circles in the same column', async () => {
+    const { lastFrame } = renderPalette();
+    await delay(50);
+
+    const frame = lastFrame();
+    const lines = frame.split('\n');
+
+    const circleLines = lines
+      .map((line) => stripAnsi(line))
+      .filter((line) => line.includes('●') || line.includes('○'));
+
+    expect(circleLines.length).toBe(PALETTE_COMMANDS.length);
+
+    const circleColumns = circleLines.map((line) => {
+      const idxSelected = line.indexOf('●');
+      const idxUnselected = line.indexOf('○');
+      return idxSelected >= 0 ? idxSelected : idxUnselected;
+    });
+
+    const firstColumn = circleColumns[0]!;
+    for (const col of circleColumns) {
+      expect(col).toBe(firstColumn);
+    }
+  });
+
+  it('all rows have the same display width (right edge aligned)', async () => {
+    const { lastFrame } = renderPalette();
+    await delay(50);
+
+    const frame = lastFrame();
+    const lines = frame.split('\n');
+
+    const circleLines = lines
+      .map((line) => stripAnsi(line))
+      .filter((line) => line.includes('●') || line.includes('○'));
+
+    const widths = circleLines.map((line) => stringWidth(line.trimEnd()));
+    const firstWidth = widths[0]!;
+    for (const w of widths) {
+      expect(w).toBe(firstWidth);
+    }
+  });
+
+  it('centers the options block within the content area', async () => {
+    const { lastFrame } = renderPalette();
+    await delay(50);
+
+    const frame = lastFrame();
+    const lines = frame.split('\n');
+
+    const circleLines = lines
+      .map((line) => stripAnsi(line))
+      .filter((line) => line.includes('●') || line.includes('○'));
+
+    const firstCircleCol = circleLines[0]!.indexOf('●');
+    expect(firstCircleCol).toBeGreaterThan(2);
   });
 });
