@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import { theme } from '../../theme/colors.js';
-import { formatTag, formatDate, formatRuler } from '../../theme/format.js';
+import { formatTag, formatDate } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import type { NoteService } from '../../core/note-service.js';
@@ -87,11 +87,10 @@ export function SearchScreen({
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="bold" borderColor="#56b6c2">
+      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth}>
         <Text> 検索 {'>'} </Text>
         <TextInput placeholder="search notes..." onChange={handleChange} />
       </Box>
-      <Text>  {formatRuler(Math.max(0, contentWidth - 2))}</Text>
 
       {hint.length > 0 && (
         <Text dimColor>  {hint}</Text>

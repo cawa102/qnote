@@ -3,7 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { TextInput } from '@inkjs/ui';
 import Fuse from 'fuse.js';
 import { theme } from '../../theme/colors.js';
-import { formatRuler, formatIndicator } from '../../theme/format.js';
+import { formatIndicator } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { scanNoteFiles } from '../../storage/file-scanner.js';
@@ -122,11 +122,10 @@ export function FindFileScreen({
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="bold" borderColor="#56b6c2">
+      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth}>
         <Text> ファイル検索 {'>'} </Text>
         <TextInput placeholder="search files..." onChange={handleChange} />
       </Box>
-      <Text>  {formatRuler(Math.max(0, contentWidth - 2))}</Text>
       <Text dimColor>  {fileCount}</Text>
 
       <Box flexDirection="column" marginTop={1}>
