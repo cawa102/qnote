@@ -14,6 +14,7 @@ import { SearchScreen } from './screens/SearchScreen.js';
 import { CaptureScreen } from './screens/CaptureScreen.js';
 import { EditorScreen } from './screens/EditorScreen.js';
 import { FindFileScreen } from './screens/FindFileScreen.js';
+import { TagListScreen } from './screens/TagListScreen.js';
 import type { NoteService } from '../core/note-service.js';
 import type { SearchIndex } from '../storage/search-index.js';
 import type { Note, NoteListItem } from '../types.js';
@@ -139,17 +140,7 @@ function AppContent({
         }
 
         case 'tags': {
-          const tags = noteService.listTags();
-          const items: NoteListItem[] = tags.map((t) => ({
-            title: `#${t.tag}`,
-            tags: [t.tag],
-            modified: '',
-            filePath: '',
-            backlinkCount: t.count,
-          }));
-          setNoteListItems(items);
-          setNoteListTitle('Tags');
-          navStore.push('noteList');
+          navStore.push('tagList');
           break;
         }
 
@@ -166,6 +157,22 @@ function AppContent({
       noteService.read(currentEntry.filePath).then((note) => {
         setPreviewNote(note);
       });
+    }
+  }, [currentEntry, noteService]);
+
+  // Load notes for tag-filtered noteList
+  React.useEffect(() => {
+    if (currentEntry.screen === 'noteList' && currentEntry.tag !== undefined) {
+      const hits = noteService.listByTag(currentEntry.tag);
+      const items: NoteListItem[] = hits.map((h) => ({
+        title: h.title,
+        tags: h.tags,
+        modified: h.modified,
+        filePath: h.filePath,
+        backlinkCount: 0,
+      }));
+      setNoteListItems(items);
+      setNoteListTitle(`#${currentEntry.tag} のノート`);
     }
   }, [currentEntry, noteService]);
 
@@ -194,6 +201,25 @@ function AppContent({
                 title={noteListTitle}
                 items={noteListItems}
                 nav={navStore}
+                tag={currentEntry.tag}
+                onRenameTag={currentEntry.tag ? (scope, filePath, newTag) => {
+                  const oldTag = currentEntry.tag!;
+                  const rename = scope === 'all'
+                    ? noteService.renameTag(oldTag, newTag)
+                    : noteService.renameTagForNote(filePath, oldTag, newTag).then(() => {});
+                  rename.then(() => {
+                    const hits = noteService.listByTag(newTag);
+                    const items: NoteListItem[] = hits.map((h) => ({
+                      title: h.title,
+                      tags: h.tags,
+                      modified: h.modified,
+                      filePath: h.filePath,
+                      backlinkCount: 0,
+                    }));
+                    setNoteListItems(items);
+                    setNoteListTitle(`#${newTag} のノート`);
+                  });
+                } : undefined}
               />
             )}
 
@@ -232,6 +258,14 @@ function AppContent({
               />
             )}
 
+            {currentEntry.screen === 'tagList' && (
+              <TagListScreen
+                noteService={noteService}
+                nav={navStore}
+                inputMode={inputModeStore}
+              />
+            )}
+
             {currentEntry.screen === 'editor' && (
               <EditorScreen
                 noteService={noteService}
@@ -250,6 +284,7 @@ function AppContent({
         <Footer
           screen={currentEntry.screen}
           focus={currentEntry.screen === 'editor' ? editorFocus : undefined}
+          tag={currentEntry.screen === 'noteList' ? currentEntry.tag : undefined}
         />
       </CenteredLayout>
     </Box>

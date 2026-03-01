@@ -164,7 +164,7 @@ export interface BackLink {
 
 // --- Navigation (discriminated union) ---
 
-export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor';
+export type ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor' | 'tagList';
 
 export interface HintEntry {
   readonly key: string;
@@ -178,7 +178,8 @@ export type ScreenEntry =
   | { readonly screen: 'findFile' }
   | { readonly screen: 'search'; readonly initialQuery?: string }
   | { readonly screen: 'capture' }
-  | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean };
+  | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean }
+  | { readonly screen: 'tagList' };
 
 export interface NavigationState {
   readonly stack: readonly ScreenEntry[];

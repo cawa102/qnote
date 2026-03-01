@@ -47,9 +47,21 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: '^G', desc: 'tags' },
     { key: 'Esc', desc: 'back' },
   ],
+  tagList: [
+    { key: 'Enter', desc: 'notes' },
+    { key: '^R', desc: 'rename' },
+    { key: 'Esc', desc: 'back' },
+  ],
 };
 
-export function getHintsForScreen(screen: ScreenName, focus?: FocusArea): readonly HintEntry[] {
+const TAG_FILTERED_NOTE_LIST_HINTS: readonly HintEntry[] = [
+  { key: 'Enter', desc: 'preview' },
+  { key: '^R', desc: 'rename' },
+  { key: 'Esc', desc: 'back' },
+];
+
+export function getHintsForScreen(screen: ScreenName, focus?: FocusArea, tag?: string): readonly HintEntry[] {
+  if (screen === 'noteList' && tag !== undefined) return TAG_FILTERED_NOTE_LIST_HINTS;
   const base = HINTS[screen];
   if (screen !== 'editor' || !focus) return base;
 
@@ -80,10 +92,11 @@ export function formatHints(entries: readonly HintEntry[]): string {
 interface FooterProps {
   readonly screen: ScreenName;
   readonly focus?: FocusArea;
+  readonly tag?: string;
 }
 
-export function Footer({ screen, focus }: FooterProps): React.ReactElement {
-  const entries = getHintsForScreen(screen, focus);
+export function Footer({ screen, focus, tag }: FooterProps): React.ReactElement {
+  const entries = getHintsForScreen(screen, focus, tag);
   return (
     <Box>
       <Text>{formatHints(entries)}</Text>

@@ -119,6 +119,60 @@ export class NoteService {
     return null;
   }
 
+  async renameTag(oldTag: string, newTag: string): Promise<number> {
+    const hits = this.index.listByTag(oldTag);
+    let count = 0;
+
+    for (const hit of hits) {
+      const note = await this.repo.read(hit.filePath);
+      const oldTags = note.meta.tags;
+      const hasNew = oldTags.includes(newTag);
+      const updatedTags = hasNew
+        ? oldTags.filter((t) => t !== oldTag)
+        : oldTags.map((t) => (t === oldTag ? newTag : t));
+
+      const updated = await this.repo.update(hit.filePath, { tags: updatedTags });
+
+      this.index.upsert({
+        filePath: updated.filePath,
+        title: updated.meta.title,
+        tags: [...updated.meta.tags],
+        content: updated.content,
+        created: updated.meta.created,
+        modified: updated.meta.modified,
+      });
+
+      count++;
+    }
+
+    return count;
+  }
+
+  async renameTagForNote(filePath: string, oldTag: string, newTag: string): Promise<void> {
+    const note = await this.repo.read(filePath);
+    const oldTags = note.meta.tags;
+
+    if (!oldTags.includes(oldTag)) {
+      return;
+    }
+
+    const hasNew = oldTags.includes(newTag);
+    const updatedTags = hasNew
+      ? oldTags.filter((t) => t !== oldTag)
+      : oldTags.map((t) => (t === oldTag ? newTag : t));
+
+    const updated = await this.repo.update(filePath, { tags: updatedTags });
+
+    this.index.upsert({
+      filePath: updated.filePath,
+      title: updated.meta.title,
+      tags: [...updated.meta.tags],
+      content: updated.content,
+      created: updated.meta.created,
+      modified: updated.meta.modified,
+    });
+  }
+
   getSearchIndex(): SearchIndex {
     return this.index;
   }

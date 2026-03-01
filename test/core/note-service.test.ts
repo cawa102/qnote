@@ -177,6 +177,109 @@ describe('NoteService', () => {
     expect(result).toBeNull();
   });
 
+  // ─── renameTag ──────────────────────────────────────────────────
+
+  describe('renameTag', () => {
+    it('renames tag in all notes that have it, returns correct count', async () => {
+      await service.create({ title: 'Note A', tags: ['old-tag', 'keep'], content: 'A' });
+      await service.create({ title: 'Note B', tags: ['old-tag'], content: 'B' });
+      await service.create({ title: 'Note C', tags: ['other'], content: 'C' });
+
+      const count = await service.renameTag('old-tag', 'new-tag');
+
+      expect(count).toBe(2);
+
+      // Verify tags updated on disk
+      const noteA = await service.read((await service.listByTag('new-tag')).find(h => h.title === 'Note A')!.filePath);
+      expect(noteA.meta.tags).toContain('new-tag');
+      expect(noteA.meta.tags).not.toContain('old-tag');
+      expect(noteA.meta.tags).toContain('keep');
+
+      const noteB = await service.read((await service.listByTag('new-tag')).find(h => h.title === 'Note B')!.filePath);
+      expect(noteB.meta.tags).toContain('new-tag');
+      expect(noteB.meta.tags).not.toContain('old-tag');
+
+      // Unrelated note unchanged
+      const noteC = await service.read((service.listByTag('other'))[0]!.filePath);
+      expect(noteC.meta.tags).toEqual(['other']);
+    });
+
+    it('handles merge when note already has newTag (dedup)', async () => {
+      await service.create({ title: 'Merge Note', tags: ['old-tag', 'new-tag'], content: 'Merge' });
+
+      const count = await service.renameTag('old-tag', 'new-tag');
+
+      expect(count).toBe(1);
+
+      const notes = service.listByTag('new-tag');
+      expect(notes).toHaveLength(1);
+      const note = await service.read(notes[0]!.filePath);
+      expect(note.meta.tags).toEqual(['new-tag']);
+      expect(note.meta.tags).not.toContain('old-tag');
+    });
+
+    it('returns 0 for non-existent tag', async () => {
+      await service.create({ title: 'Some Note', tags: ['existing'], content: 'Content' });
+
+      const count = await service.renameTag('nonexistent', 'anything');
+
+      expect(count).toBe(0);
+    });
+
+    it('reindexes notes after rename so search reflects new tags', async () => {
+      await service.create({ title: 'Indexed', tags: ['old-tag'], content: 'Indexed content' });
+
+      await service.renameTag('old-tag', 'new-tag');
+
+      expect(service.listByTag('old-tag')).toHaveLength(0);
+      expect(service.listByTag('new-tag')).toHaveLength(1);
+    });
+  });
+
+  // ─── renameTagForNote ──────────────────────────────────────────
+
+  describe('renameTagForNote', () => {
+    it('renames tag in a single note only', async () => {
+      const noteA = await service.create({ title: 'Note A', tags: ['shared-tag'], content: 'A' });
+      await service.create({ title: 'Note B', tags: ['shared-tag'], content: 'B' });
+
+      await service.renameTagForNote(noteA.filePath, 'shared-tag', 'renamed-tag');
+
+      const updatedA = await service.read(noteA.filePath);
+      expect(updatedA.meta.tags).toContain('renamed-tag');
+      expect(updatedA.meta.tags).not.toContain('shared-tag');
+
+      // Note B should be unchanged
+      const notesBWithShared = service.listByTag('shared-tag');
+      expect(notesBWithShared).toHaveLength(1);
+      expect(notesBWithShared[0]!.title).toBe('Note B');
+    });
+
+    it('handles merge on single note (dedup)', async () => {
+      const note = await service.create({ title: 'Dedup Note', tags: ['old', 'new'], content: 'Dedup' });
+
+      await service.renameTagForNote(note.filePath, 'old', 'new');
+
+      const updated = await service.read(note.filePath);
+      expect(updated.meta.tags).toEqual(['new']);
+    });
+
+    it('throws NoteNotFoundError if note does not exist', async () => {
+      await expect(
+        service.renameTagForNote('/nonexistent/path.md', 'old', 'new'),
+      ).rejects.toThrow('Note not found');
+    });
+
+    it('is a no-op if note does not have the old tag', async () => {
+      const note = await service.create({ title: 'No Match', tags: ['other'], content: 'Content' });
+
+      await service.renameTagForNote(note.filePath, 'nonexistent', 'new-tag');
+
+      const updated = await service.read(note.filePath);
+      expect(updated.meta.tags).toEqual(['other']);
+    });
+  });
+
   it('updates backlinks when content changes via reindex', async () => {
     const target = await service.create({
       title: 'Link Target',

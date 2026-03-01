@@ -14,7 +14,7 @@ describe('getHintsForScreen', () => {
   });
 
   it('returns non-empty array for every screen name', () => {
-    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor'];
+    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor', 'tagList'];
     for (const screen of screens) {
       const hints = getHintsForScreen(screen);
       expect(Array.isArray(hints)).toBe(true);
@@ -23,7 +23,7 @@ describe('getHintsForScreen', () => {
   });
 
   it('each entry has non-empty key and desc', () => {
-    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor'];
+    const screens: readonly ScreenName[] = ['palette', 'findFile', 'noteList', 'notePreview', 'search', 'capture', 'editor', 'tagList'];
     for (const screen of screens) {
       const hints = getHintsForScreen(screen);
       for (const entry of hints) {
@@ -80,6 +80,36 @@ describe('getHintsForScreen', () => {
     expect(hints).toContainEqual({ key: 'q', desc: 'quit' });
     const keys = hints.map((h) => h.key);
     expect(keys).not.toContain('^Q');
+  });
+
+  it('returns tagList hints with Enter, ^R, Esc', () => {
+    const hints = getHintsForScreen('tagList');
+    expect(hints).toContainEqual({ key: 'Enter', desc: 'notes' });
+    expect(hints).toContainEqual({ key: '^R', desc: 'rename' });
+    expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
+  });
+
+  it('returns tag-filtered noteList hints when tag param is provided', () => {
+    const hints = getHintsForScreen('noteList', undefined, 'typescript');
+    expect(hints).toContainEqual({ key: 'Enter', desc: 'preview' });
+    expect(hints).toContainEqual({ key: '^R', desc: 'rename' });
+    expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
+    // Should NOT contain default noteList hints
+    const keys = hints.map((h) => h.key);
+    expect(keys).not.toContain(':');
+    expect(keys).not.toContain('/');
+  });
+
+  it('returns default noteList hints when tag param is undefined', () => {
+    const hints = getHintsForScreen('noteList');
+    expect(hints).toContainEqual({ key: ':', desc: 'cmd' });
+    expect(hints).toContainEqual({ key: '/', desc: 'search' });
+  });
+
+  it('tag param is ignored for non-noteList screens', () => {
+    const hintsWithTag = getHintsForScreen('palette', undefined, 'sometag');
+    const hintsWithout = getHintsForScreen('palette');
+    expect(hintsWithTag).toEqual(hintsWithout);
   });
 
   describe('editor hints with focus context', () => {
@@ -176,6 +206,14 @@ describe('Footer component', () => {
     expect(frame).toContain('select');
     expect(frame).toContain('q');
     expect(frame).toContain('quit');
+  });
+
+  it('renders tag-filtered hints when tag prop is provided on noteList screen', () => {
+    const { lastFrame } = render(React.createElement(Footer, { screen: 'noteList', tag: 'typescript' }));
+    const frame = stripAnsi(lastFrame());
+    expect(frame).toContain('preview');
+    expect(frame).toContain('^R');
+    expect(frame).not.toContain('cmd');
   });
 
   it('renders different content per screen', () => {
