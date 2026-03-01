@@ -27,33 +27,33 @@ describe('PALETTE_COMMANDS', () => {
 });
 
 describe('computePaletteLayout', () => {
-  it('contentWidth=80 → menuWidth=72, leftPad=4', () => {
+  it('contentWidth=80 → menuWidth=48, leftPad=16', () => {
     const layout = computePaletteLayout(80);
-    expect(layout.menuWidth).toBe(72);
-    expect(layout.leftPad).toBe(4);
+    expect(layout.menuWidth).toBe(48);
+    expect(layout.leftPad).toBe(16);
   });
 
-  it('contentWidth=60 → menuWidth=52, leftPad=4', () => {
+  it('contentWidth=60 → menuWidth=48, leftPad=6', () => {
     const layout = computePaletteLayout(60);
-    expect(layout.menuWidth).toBe(52);
+    expect(layout.menuWidth).toBe(48);
+    expect(layout.leftPad).toBe(6);
+  });
+
+  it('contentWidth=48 → menuWidth=40, leftPad=4', () => {
+    const layout = computePaletteLayout(48);
+    expect(layout.menuWidth).toBe(40);
     expect(layout.leftPad).toBe(4);
   });
 
-  it('contentWidth=48 → menuWidth=44 (min clamp), leftPad=2', () => {
-    const layout = computePaletteLayout(48);
-    expect(layout.menuWidth).toBe(44);
-    expect(layout.leftPad).toBe(2);
-  });
-
-  it('contentWidth=30 → menuWidth=44 (min), leftPad=0 (non-negative)', () => {
+  it('contentWidth=30 → menuWidth=30 (min), leftPad=0 (non-negative)', () => {
     const layout = computePaletteLayout(30);
-    expect(layout.menuWidth).toBe(44);
+    expect(layout.menuWidth).toBe(30);
     expect(layout.leftPad).toBe(0);
   });
 
-  it('contentWidth=100 → menuWidth=72 (max clamp)', () => {
+  it('contentWidth=100 → menuWidth=48 (max clamp)', () => {
     const layout = computePaletteLayout(100);
-    expect(layout.menuWidth).toBe(72);
+    expect(layout.menuWidth).toBe(48);
   });
 
   it('contentWidth >= 50 → showKeys=true', () => {
@@ -65,5 +65,11 @@ describe('computePaletteLayout', () => {
   it('contentWidth < 50 → showKeys=false', () => {
     expect(computePaletteLayout(49).showKeys).toBe(false);
     expect(computePaletteLayout(30).showKeys).toBe(false);
+  });
+
+  it('rowGap is always 1', () => {
+    expect(computePaletteLayout(30).rowGap).toBe(1);
+    expect(computePaletteLayout(80).rowGap).toBe(1);
+    expect(computePaletteLayout(100).rowGap).toBe(1);
   });
 });

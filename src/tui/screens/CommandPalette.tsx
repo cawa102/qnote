@@ -69,17 +69,16 @@ export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): Re
     <Box flexDirection="column">
       <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
       <Text>{formatRuler(contentWidth)}</Text>
-      <Box flexDirection="column" marginTop={1} paddingLeft={layout.leftPad}>
+      <Box flexDirection="column" marginTop={1} paddingLeft={layout.leftPad} gap={layout.rowGap}>
         {PALETTE_COMMANDS.map((cmd, i) => {
           const isSelected = i === selectedIndex;
           return (
             <Box key={cmd.action} width={layout.menuWidth}>
-              <Text>
-                {formatIndicator(isSelected) + ' ' + (isSelected ? theme.selected(cmd.label) : theme.dim(cmd.label))}
-              </Text>
+              <Text>{formatIndicator(isSelected) + '  '}</Text>
+              <Text bold>{isSelected ? theme.selected(cmd.label) : cmd.label}</Text>
               <Box flexGrow={1} />
               {layout.showKeys && (
-                <Text>{theme.accent(cmd.key)}</Text>
+                <Text bold>{theme.accent(cmd.key)}</Text>
               )}
             </Box>
           );

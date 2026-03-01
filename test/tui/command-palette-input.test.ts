@@ -98,7 +98,7 @@ describe('CommandPalette cursor navigation', () => {
     await delay(50);
 
     const frame = lastFrame();
-    expect(frame).toMatch(/● find file/);
+    expect(frame).toMatch(/●\s+find file/);
   });
 
   it('arrow up from second item returns to first', async () => {
@@ -111,7 +111,7 @@ describe('CommandPalette cursor navigation', () => {
     await delay(50);
 
     const frame = lastFrame();
-    expect(frame).toMatch(/● new note/);
+    expect(frame).toMatch(/●\s+new note/);
   });
 
   it('Enter selects the current item', async () => {
@@ -135,7 +135,7 @@ describe('CommandPalette cursor navigation', () => {
     await delay(50);
 
     const frame = lastFrame();
-    expect(frame).toMatch(/● new note/);
+    expect(frame).toMatch(/●\s+new note/);
   });
 
   it('sets input mode to navigation', async () => {

@@ -33,12 +33,13 @@ export interface PaletteLayout {
   readonly menuWidth: number;
   readonly leftPad: number;
   readonly showKeys: boolean;
+  readonly rowGap: number;
 }
 
 export function computePaletteLayout(contentWidth: number): PaletteLayout {
-  const menuWidth = Math.max(44, Math.min(contentWidth - 8, 72));
+  const menuWidth = Math.max(30, Math.min(contentWidth - 8, 48));
   const leftPad = Math.max(0, Math.floor((contentWidth - menuWidth) / 2));
   const showKeys = contentWidth >= 50;
-  return { menuWidth, leftPad, showKeys };
+  return { menuWidth, leftPad, showKeys, rowGap: 1 };
 }
 
