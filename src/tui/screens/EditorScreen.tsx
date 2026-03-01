@@ -7,7 +7,7 @@ import { BufferManager } from '../editor/buffer-manager.js';
 import { highlightLines } from '../editor/syntax-highlighter.js';
 import { renderViewport } from '../editor/renderer.js';
 import { renderMarkdown } from '../utils/render-markdown.js';
-import { buildFileTree } from '../editor/file-tree-builder.js';
+import { buildFileTree, flattenTree } from '../editor/file-tree-builder.js';
 import { BufferTabs } from '../components/BufferTabs.js';
 import { EditorHeaderBar } from '../components/EditorHeaderBar.js';
 import type { SaveStatus } from '../components/EditorHeaderBar.js';
@@ -32,6 +32,109 @@ interface EditorScreenProps {
 const MIN_TREE_WIDTH = 15;
 const MAX_TREE_WIDTH = 30;
 const TREE_WIDTH_RATIO = 0.25;
+export const SEPARATOR_WIDTH = 3; // ' │ '
+
+export interface EditorLayout {
+  readonly treeWidth: number;
+  readonly separatorWidth: number;
+  readonly editorWidth: number;
+}
+
+export function computeEditorLayout(contentWidth: number, fileTreeVisible: boolean): EditorLayout {
+  if (!fileTreeVisible) {
+    return { treeWidth: 0, separatorWidth: 0, editorWidth: contentWidth };
+  }
+  const treeWidth = Math.min(MAX_TREE_WIDTH, Math.max(MIN_TREE_WIDTH, Math.floor(contentWidth * TREE_WIDTH_RATIO)));
+  const editorWidth = contentWidth - treeWidth - SEPARATOR_WIDTH;
+  return { treeWidth, separatorWidth: SEPARATOR_WIDTH, editorWidth };
+}
+
+/**
+ * Determine the next Ctrl+E state (3-state cycle):
+ * - tree hidden → show tree + focus tree
+ * - tree visible & focus elsewhere → focus tree
+ * - tree visible & focus on tree → hide tree + focus editor
+ */
+export function nextCtrlEState(
+  fileTreeVisible: boolean,
+  currentFocus: FocusArea,
+): { readonly fileTreeVisible: boolean; readonly focus: FocusArea } {
+  if (!fileTreeVisible) {
+    return { fileTreeVisible: true, focus: 'fileTree' };
+  }
+  if (currentFocus === 'fileTree') {
+    return { fileTreeVisible: false, focus: 'editor' };
+  }
+  return { fileTreeVisible: true, focus: 'fileTree' };
+}
+
+export type TreeAction =
+  | { readonly type: 'move'; readonly index: number }
+  | { readonly type: 'open'; readonly path: string }
+  | { readonly type: 'toggle'; readonly path: string }
+  | { readonly type: 'noop' };
+
+/**
+ * Pure function: given a key name, tree root, and current cursor index,
+ * return the action to perform.
+ */
+export function handleTreeKey(
+  keyName: string,
+  root: FileTreeNode,
+  cursorIndex: number,
+): TreeAction {
+  const flat = flattenTree(root);
+  const maxIndex = flat.length - 1;
+
+  if (keyName === 'j' || keyName === 'down') {
+    return { type: 'move', index: Math.min(cursorIndex + 1, maxIndex) };
+  }
+  if (keyName === 'k' || keyName === 'up') {
+    return { type: 'move', index: Math.max(cursorIndex - 1, 0) };
+  }
+
+  const entry = flat[cursorIndex];
+  if (!entry) return { type: 'noop' };
+  const node = entry.node;
+
+  if (keyName === 'return') {
+    if (node.type === 'file') {
+      return { type: 'open', path: node.path };
+    }
+    return { type: 'toggle', path: node.path };
+  }
+
+  if (keyName === 'l' || keyName === 'right') {
+    if (node.type === 'directory' && !node.expanded) {
+      return { type: 'toggle', path: node.path };
+    }
+    return { type: 'noop' };
+  }
+
+  if (keyName === 'h' || keyName === 'left') {
+    if (node.type === 'directory' && node.expanded) {
+      return { type: 'toggle', path: node.path };
+    }
+    return { type: 'noop' };
+  }
+
+  return { type: 'noop' };
+}
+
+/**
+ * Immutably toggle the expanded state of a directory node in the tree.
+ */
+export function toggleTreeNode(root: FileTreeNode, targetPath: string): FileTreeNode {
+  if (root.path === targetPath && root.type === 'directory') {
+    return { ...root, expanded: !root.expanded };
+  }
+  if (root.type === 'directory' && root.children) {
+    const newChildren = root.children.map((child) => toggleTreeNode(child, targetPath));
+    if (newChildren.every((c, i) => c === root.children![i])) return root;
+    return { ...root, children: newChildren };
+  }
+  return root;
+}
 
 /**
  * Determine the next focus area when a Ctrl key is pressed for header editing.
@@ -92,6 +195,7 @@ export function EditorScreen({
     expanded: true,
   });
   const [selectedTreePath, setSelectedTreePath] = useState(notesDir);
+  const [treeCursorIndex, setTreeCursorIndex] = useState(0);
 
   // Title/tags state for header bar
   const [headerTitle, setHeaderTitle] = useState('');
@@ -149,10 +253,8 @@ export function EditorScreen({
   }, [fileTreeVisible, notesDir]);
 
   // Layout calculations
-  const treeWidth = fileTreeVisible
-    ? Math.min(MAX_TREE_WIDTH, Math.max(MIN_TREE_WIDTH, Math.floor(contentWidth * TREE_WIDTH_RATIO)))
-    : 0;
-  const editorWidth = contentWidth - treeWidth;
+  const layout = computeEditorLayout(contentWidth, fileTreeVisible);
+  const { treeWidth, editorWidth } = layout;
   const headerHeight = 3; // title + tags + ruler
   const tabsHeight = 1;
   const footerHeight = 0; // footer is outside EditorScreen
@@ -343,9 +445,11 @@ export function EditorScreen({
         setMode((prev) => (prev === 'edit' ? 'preview' : 'edit'));
         return;
       }
-      // Ctrl+E — toggle file tree
+      // Ctrl+E — 3-state cycle: show+focus / focus / hide
       if (input === 'e') {
-        setFileTreeVisible((prev) => !prev);
+        const next = nextCtrlEState(fileTreeVisible, focus);
+        setFileTreeVisible(next.fileTreeVisible);
+        setFocus(next.focus);
         return;
       }
       // M-4: Ctrl+W — close buffer with dirty check
@@ -396,7 +500,29 @@ export function EditorScreen({
       return;
     }
 
-    // Dispatch to focus area
+    // Dispatch to file tree
+    if (focus === 'fileTree') {
+      const keyName = getKeyName(key) ?? input;
+      if (keyName) {
+        const action = handleTreeKey(keyName, fileTreeRoot, treeCursorIndex);
+        switch (action.type) {
+          case 'move':
+            setTreeCursorIndex(action.index);
+            break;
+          case 'open':
+            handleTreeSelect(action.path);
+            break;
+          case 'toggle':
+            setFileTreeRoot((prev) => toggleTreeNode(prev, action.path));
+            break;
+          case 'noop':
+            break;
+        }
+      }
+      return;
+    }
+
+    // Dispatch to editor
     if (focus === 'editor' && active && mode === 'edit') {
       const keyInfo: KeyInfo = {
         ctrl: key.ctrl,
@@ -447,10 +573,20 @@ export function EditorScreen({
         <FileTree
           root={fileTreeRoot}
           selectedPath={selectedTreePath}
+          cursorIndex={focus === 'fileTree' ? treeCursorIndex : undefined}
           width={treeWidth}
           height={rows - 1}
           onSelect={handleTreeSelect}
         />
+      )}
+
+      {/* Separator between file tree and editor */}
+      {fileTreeVisible && (
+        <Box flexDirection="column" width={SEPARATOR_WIDTH}>
+          {Array.from({ length: rows - 1 }, (_, i) => (
+            <Text key={i}>{theme.dim(' │ ')}</Text>
+          ))}
+        </Box>
       )}
 
       {/* Main editor area */}

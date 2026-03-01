@@ -8,6 +8,7 @@ import { theme } from '../../theme/colors.js';
 interface FileTreeProps {
   readonly root: FileTreeNode;
   readonly selectedPath: string;
+  readonly cursorIndex?: number;
   readonly width: number;
   readonly height: number;
   readonly onSelect: (path: string) => void;
@@ -61,12 +62,16 @@ function TreeLine({ node, depth, isSelected, width }: TreeLineProps): React.Reac
 export function FileTree({
   root,
   selectedPath,
+  cursorIndex,
   width,
   height,
 }: FileTreeProps): React.ReactElement {
   const flatEntries: readonly FlatTreeEntry[] = flattenTree(root);
 
-  const selectedIndex = flatEntries.findIndex((e) => e.node.path === selectedPath);
+  // Use cursorIndex if provided, otherwise fall back to path-based selection
+  const selectedIndex = cursorIndex !== undefined
+    ? cursorIndex
+    : flatEntries.findIndex((e) => e.node.path === selectedPath);
   const scrollOffset = React.useMemo(() => {
     if (selectedIndex < 0) return 0;
     if (selectedIndex < height) return 0;
@@ -77,12 +82,12 @@ export function FileTree({
 
   return (
     <Box flexDirection="column" width={width}>
-      {visibleEntries.map((entry) => (
+      {visibleEntries.map((entry, i) => (
         <TreeLine
           key={entry.node.path}
           node={entry.node}
           depth={entry.depth}
-          isSelected={entry.node.path === selectedPath}
+          isSelected={scrollOffset + i === selectedIndex}
           width={width}
         />
       ))}
