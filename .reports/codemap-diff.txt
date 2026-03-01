@@ -1,34 +1,43 @@
-CODEMAP DIFF REPORT
-===================
-Date: 2026-03-01 15:50 JST
-Previous commit: a02370b
-Current commit:  4fbdb90
+Codemap Update Report
+=====================
+Date: 2026-03-01 22:20 JST
+Previous: 4fbdb90 (2026-03-01 15:50)
+Current:  27c954a (2026-03-01 22:20)
 
-Changes: FindFileScreen border fix, CommandPalette grid redesign, editor enhancements
+## Changes Summary
 
-Files Modified (22 total, 840 insertions, 272 deletions):
-  - src/tui/screens/FindFileScreen.tsx (149→159) — deferred border rendering, consolidated state
-  - src/tui/screens/SearchScreen.tsx (123→120) — removed explicit height, stable hint line
-  - src/tui/screens/CommandPalette.tsx (106→142) — responsive icon grid layout
-  - src/tui/screens/EditorScreen.tsx (499→705) — inline title/tag editing
-  - src/tui/screens/CaptureScreen.tsx (136→157) — two-phase input
-  - src/tui/components/Footer.tsx (30→92) — context-aware hints
-  - src/tui/components/EditorHeaderBar.tsx (123→189) — inline editing support
-  - src/tui/components/tag-navigation.ts (new, 63 lines) — tag navigation helpers
-  - src/theme/format.ts (28→54) — palette grid layout, indicators
-  - src/theme/colors.ts (29→41) — additional color helpers
-  - src/types.ts (166→201) — expanded type definitions
-  + 11 other files with minor changes
+Total lines: 5,647 → 6,958 (+23.2%)
 
-Metrics:
-  Source files: 44 → 45 (+1)
-  Source lines: 5,081 → 5,647 (+566, +11%)
-  Test count:   586 → 718 (+132)
-  Components:   6 → 7 (+tag-navigation)
+### architecture.md — ~25% changed
+- Screens: 7 → 8 (added tagList)
+- Components: 7 → 8 (added HelpPanel)
+- Editor engine: added clipboard module
+- Core: added renameTag to NoteService
+- Theme: added selectionBg
+- Added editor input flow to data flow diagram
+- Added non-modal overlay pattern
+- Updated line counts across all layers
 
-Codemap Changes (diff %):
-  architecture.md: ~18% (patterns, input modes, line counts, constraints)
-  frontend.md:     ~25% (screens table, components, Ink constraints section)
-  backend.md:      ~5% (minor line count updates)
-  data.md:         ~5% (types.ts line count)
-  Overall:         ~13% (under 30% threshold — auto-updated)
+### frontend.md — ~35% changed
+- Added TagListScreen (252 lines) to screens table
+- Added HelpPanel (62 lines) to components table
+- Editor engine: 6 files/1,267 lines → 8 files/1,802 lines (+42%)
+  - New: clipboard.ts (13 lines)
+  - text-buffer.ts: 496 → 838 lines (selection, word movement)
+  - text-editor.ts: 181 → 279 lines (Mac keybindings, formatting)
+  - renderer.ts: 138 → 301 lines (selection highlighting)
+- Added EditorScreen keybindings section
+- Added Ink \x1f constraint documentation
+- Updated title-art.ts: 38 → 136 lines (star field + gradient)
+- Updated NoteList: 74 → 205 lines (tag-filtered mode)
+
+### backend.md — ~8% changed
+- Added renameTag/renameTagForNote to NoteService API
+- Updated NoteService line count: 142 → 196
+
+### data.md — ~12% changed
+- Added 'tagList' to ScreenName union and ScreenEntry
+- Added Clipboard type documentation
+- Updated editor types line count
+
+## Diff Percentage: ~20% overall (below 30% threshold, auto-approved)

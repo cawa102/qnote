@@ -62,10 +62,10 @@ See `codemaps/architecture.md` for the full architecture overview.
 bin/qnote.ts        → CLI entry (commander.js)
 src/cli/            → CLI command handlers
 src/tui/            → Ink 5 + React 18 TUI
-  screens/          → 7 screens (palette, noteList, notePreview, findFile, search, capture, editor)
-  components/       → 7 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree, tag-navigation)
+  screens/          → 8 screens (palette, noteList, notePreview, findFile, search, capture, editor, tagList)
+  components/       → 8 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree, HelpPanel, tag-navigation)
   hooks/            → 6 hooks (navigation, input-mode, global-keys, layout, layout-context, debounce)
-  editor/           → Editor engine (text-buffer, text-editor, buffer-manager, syntax, renderer, file-tree)
+  editor/           → Editor engine (text-buffer, text-editor, buffer-manager, clipboard, syntax, renderer, file-tree)
 src/core/           → Business logic (NoteService, ConfigService)
 src/storage/        → Persistence (NoteRepository, SearchIndex FTS5, file-scanner, frontmatter, link-parser)
 src/theme/          → Semantic colors + formatting
@@ -76,7 +76,7 @@ src/types.ts        → Shared types and error hierarchy
 
 - **Immutable types**: All interfaces use `readonly` properties
 - **ESM-only**: `"type": "module"` throughout
-- **No mutation**: State updates return new objects (TextBuffer, BufferManager)
+- **No mutation**: State updates return new objects (TextBuffer, BufferManager, Clipboard)
 - **Source of truth**: Markdown files on disk; SQLite is rebuildable via `qnote reindex`
 - **Atomic writes**: temp file → `rename()` to prevent data loss
 
@@ -99,7 +99,7 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 | better-sqlite3 | SQLite FTS5 search index |
 | commander | CLI argument parsing |
 | chalk | Terminal colors |
-| fuse.js | Fuzzy search (command palette, file finder) |
+| fuse.js | Fuzzy search (command palette, file finder, tag list) |
 | gray-matter | YAML frontmatter parsing |
 | marked + marked-terminal | Markdown rendering |
 | fullscreen-ink | Fullscreen terminal mode |

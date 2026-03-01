@@ -1,8 +1,8 @@
 # Data Models & Schemas Codemap
 
-> Freshness: 2026-03-01 15:50 JST | Commit: 4fbdb90
+> Freshness: 2026-03-01 22:20 JST | Commit: 27c954a
 
-## TypeScript Types (src/types.ts, 201 lines)
+## TypeScript Types (src/types.ts, 202 lines)
 
 ### Error Hierarchy
 
@@ -90,7 +90,7 @@ ScanOptions {
 ### Navigation (Discriminated Union)
 
 ```typescript
-ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor'
+ScreenName = 'palette' | 'noteList' | 'notePreview' | 'findFile' | 'search' | 'capture' | 'editor' | 'tagList'
 
 ScreenEntry =
   | { screen: 'palette' }
@@ -100,6 +100,7 @@ ScreenEntry =
   | { screen: 'search'; initialQuery?: string }
   | { screen: 'capture' }
   | { screen: 'editor'; filePath?: string; showFileTree?: boolean }
+  | { screen: 'tagList' }
 
 NavigationState {
   readonly stack: readonly ScreenEntry[]
@@ -117,7 +118,7 @@ QnoteConfig {
 }
 ```
 
-### Editor Types (src/tui/editor/types.ts, 47 lines)
+### Editor Types (src/tui/editor/types.ts, 46 lines)
 
 ```typescript
 CursorPosition { readonly line: number; readonly col: number }
@@ -149,6 +150,19 @@ FileTreeNode {
   readonly children: readonly FileTreeNode[]
   readonly expanded: boolean
 }
+```
+
+### Clipboard (src/tui/editor/clipboard.ts, 13 lines)
+
+```typescript
+Clipboard {
+  readonly text: string
+}
+
+Clipboard.empty()         → Clipboard   // factory, text=''
+clipboard.copy(text)      → Clipboard   // immutable update
+clipboard.getText()       → string
+clipboard.isEmpty()       → boolean
 ```
 
 ## SQLite Schema (SearchIndex)

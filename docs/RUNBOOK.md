@@ -41,12 +41,43 @@ The TUI uses a stack-based single-pane navigation model. Key shortcuts depend on
 | Screen | Description | Input Mode |
 |--------|-------------|------------|
 | Command Palette | Home screen — icon grid with shortcut keys | navigation |
-| Note List | Recent notes list | navigation |
+| Note List | Recent notes list, tag-filtered mode | navigation |
 | Note Preview | Markdown render with wikilink jumps (1-9) | navigation |
 | Find File | Fuzzy file name search (fuse.js) | text |
 | Search | Full-text search (SQLite FTS5 trigram) | text |
 | Capture | Quick note capture (title + editor) | text |
-| Editor | Built-in multi-buffer editor | text |
+| Editor | Built-in multi-buffer editor with keybinding help | text |
+| Tag List | Tag browser with fuzzy search and rename | text |
+
+#### Editor Keybindings
+
+Press `Ctrl+/` in the editor to toggle the built-in keybinding help panel.
+
+| Category | Key | Action |
+|----------|-----|--------|
+| Navigation | `←↑↓→` | Move cursor |
+| | `Opt+←/→` | Word movement |
+| | `Home/End` | Line start/end |
+| | `Opt+↑/↓` | Document start/end |
+| Selection | `Shift+Arrow` | Select text |
+| | `Opt+Shift+←/→` | Word selection |
+| | `Opt+A` | Select all |
+| Clipboard | `Opt+C` | Copy |
+| | `Opt+X` | Cut |
+| | `Opt+V` | Paste |
+| Editing | `⌫` | Delete backward |
+| | `Ctrl+D` | Delete forward |
+| | `Tab / Shift+Tab` | Indent / unindent |
+| | `Ctrl+Z / Ctrl+Y` | Undo / redo |
+| Formatting | `Opt+B` | Bold |
+| | `Opt+I` | Italic |
+| | `Ctrl+K` | Insert link |
+| File | `Ctrl+S` | Save |
+| | `Ctrl+P` | Toggle preview |
+| | `Ctrl+E` | Toggle file tree |
+| | `Ctrl+/` | Toggle help panel |
+
+**Note**: `Ctrl+C/X/V` are not available — they conflict with terminal signals (SIGINT). Use `Opt+C/X/V` instead.
 
 ## Data Locations
 
@@ -119,6 +150,14 @@ npm rebuild better-sqlite3
 **Root cause**: `@inkjs/ui` TextInput's internal useEffect re-fires onChange on every render when the callback reference changes. Fixed in commit da41389 by using `useCallback`.
 
 **Status**: Fixed. If similar issues appear in other screens using TextInput + useInput, apply the same `useCallback` pattern.
+
+### Ctrl+/ not working in editor
+
+**Symptom**: Pressing Ctrl+/ does not toggle the help panel.
+
+**Root cause**: Ink's `parseKeypress` only sets `key.ctrl = true` for bytes `\x01`–`\x1a` (Ctrl+A through Ctrl+Z). `\x1f` (Ctrl+/) is outside this range (ASCII 31 > 26), so `key.ctrl` is `false`. The check must be done via raw `input === '\x1f'` outside the `key.ctrl` block.
+
+**Status**: Fixed in commit 27c954a.
 
 ## Monitoring
 

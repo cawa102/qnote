@@ -1,10 +1,10 @@
 # Backend (Core + Storage + CLI) Codemap
 
-> Freshness: 2026-03-01 15:50 JST | Commit: 4fbdb90
+> Freshness: 2026-03-01 22:20 JST | Commit: 27c954a
 
 ## Core Layer
 
-### NoteService (src/core/note-service.ts, 142 lines)
+### NoteService (src/core/note-service.ts, 196 lines)
 
 ```
 class NoteService:
@@ -24,6 +24,10 @@ class NoteService:
   Links:
     getBacklinks(slug)       → BacklinkHit[]  # find sources linking to target
     resolveWikiLink(target)  → { filePath, title } | null
+
+  Tags:
+    renameTag(oldTag, newTag)              → number  # batch rename across all notes
+    renameTagForNote(filePath, old, new)   → void    # single-note tag rename
 
   Maintenance:
     reindex()         → number     # rebuild entire index from .md files
@@ -63,7 +67,7 @@ class NoteRepository:
     atomicWrite()        → temp file → rename()
 ```
 
-### SearchIndex (src/storage/search-index.ts, 329 lines)
+### SearchIndex (src/storage/search-index.ts, 328 lines)
 
 ```
 class SearchIndex:
@@ -111,7 +115,7 @@ ScanOptions { excludeDirs?: string[] }
 // P1: Extract shared walker to src/storage/fs-scanner.ts
 ```
 
-### Frontmatter (src/storage/frontmatter.ts, 93 lines)
+### Frontmatter (src/storage/frontmatter.ts, 92 lines)
 
 ```
 parseFrontmatter(raw: string)                → ParsedNote
@@ -123,7 +127,7 @@ Features:
   - Extracts title from first # Heading if frontmatter missing
 ```
 
-### Link Parser (src/storage/link-parser.ts, 61 lines)
+### Link Parser (src/storage/link-parser.ts, 60 lines)
 
 ```
 extractWikiLinks(content: string) → WikiLink[]
