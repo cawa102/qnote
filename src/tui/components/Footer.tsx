@@ -3,7 +3,7 @@ import { Box, Text } from 'ink';
 import type { ScreenName } from '../../types.js';
 
 const HINTS: Readonly<Record<ScreenName, string>> = {
-  palette: 'Enter select   Esc quit',
+  palette: 'Enter select   q quit',
   findFile: '↑↓ select   Enter open   Esc cancel',
   noteList: ': cmd   / search   n new   q quit',
   notePreview: 'e edit   p raw   : cmd   Esc back',

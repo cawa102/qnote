@@ -3,7 +3,7 @@ export { createNavigationStore } from './hooks/use-navigation.js';
 export type { NavigationStore, ScreenEntry } from './hooks/use-navigation.js';
 export { Footer, getHintsForScreen } from './components/Footer.js';
 export { debounce, useDebounce } from './hooks/use-debounce.js';
-export { CommandPalette, filterCommands, PALETTE_COMMANDS } from './screens/CommandPalette.js';
+export { CommandPalette, PALETTE_COMMANDS } from './screens/CommandPalette.js';
 export type { PaletteCommand } from './screens/CommandPalette.js';
 export { NoteList, clampIndex } from './screens/NoteList.js';
 export { NotePreview } from './screens/NotePreview.js';

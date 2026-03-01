@@ -8,7 +8,8 @@ describe('getHintsForScreen', () => {
   it('returns palette hints', () => {
     const hints = getHintsForScreen('palette');
     expect(hints).toContain('Enter');
-    expect(hints).toContain('Esc');
+    expect(hints).toContain('q quit');
+    expect(hints).not.toContain('Esc');
   });
 
   it('returns noteList hints', () => {
@@ -67,7 +68,7 @@ describe('Footer component', () => {
   it('renders hint text for the given screen', () => {
     const { lastFrame } = render(React.createElement(Footer, { screen: 'palette' }));
     expect(lastFrame()).toContain('Enter select');
-    expect(lastFrame()).toContain('Esc quit');
+    expect(lastFrame()).toContain('q quit');
   });
 
   it('renders different hints for each screen', () => {

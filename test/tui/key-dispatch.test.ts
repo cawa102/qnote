@@ -39,7 +39,7 @@ function createOptions(overrides: {
 
 describe('dispatchGlobalKey', () => {
   describe('Esc key', () => {
-    it('calls exit when at root (stack depth 1)', () => {
+    it('does nothing on palette at root (stack depth 1)', () => {
       const nav = createNavigationStore();
       const exit = vi.fn();
 
@@ -50,7 +50,8 @@ describe('dispatchGlobalKey', () => {
         exit,
       });
 
-      expect(exit).toHaveBeenCalled();
+      expect(exit).not.toHaveBeenCalled();
+      expect(nav.stackDepth()).toBe(1);
     });
 
     it('pops navigation when stack depth > 1', () => {
@@ -123,6 +124,14 @@ describe('dispatchGlobalKey', () => {
   describe('/ key', () => {
     it('pushes search when not on search', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
+
+      dispatchGlobalKey('/', { escape: false }, opts);
+
+      expect(opts.nav.current().screen).toBe('search');
+    });
+
+    it('pushes search from palette', () => {
+      const opts = createOptions({ currentScreen: 'palette' });
 
       dispatchGlobalKey('/', { escape: false }, opts);
 

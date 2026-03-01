@@ -25,14 +25,14 @@ export function dispatchGlobalKey(
   const { nav, inputMode, currentScreen, exit, currentFilePath } = options;
   const mode = inputMode.current();
 
-  // Esc — always works: pop navigation stack or exit
+  // Esc — pop navigation stack (palette at root is a no-op)
   // Skip for editor screen — EditorScreen handles its own Esc (dirty confirmation)
   if (key.escape && currentScreen !== 'editor') {
     if (nav.stackDepth() <= 1) {
-      exit();
-    } else {
-      nav.pop();
+      // At root (palette) — do nothing; use q to quit
+      return;
     }
+    nav.pop();
     return;
   }
 

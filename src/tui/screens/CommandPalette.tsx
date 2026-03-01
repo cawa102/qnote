@@ -1,12 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { TextInput } from '@inkjs/ui';
-import Fuse from 'fuse.js';
 import { theme } from '../../theme/colors.js';
 import { formatRuler } from '../../theme/format.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { TitleBanner } from '../components/TitleBanner.js';
-import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { InputModeStore } from '../hooks/use-input-mode.js';
 
 export interface PaletteCommand {
@@ -25,53 +22,32 @@ export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
   { label: 'tags', description: 'タグ一覧', action: 'tags' },
 ];
 
-const fuse = new Fuse([...PALETTE_COMMANDS], {
-  keys: ['label', 'description'],
-  threshold: 0.4,
-});
-
-export function filterCommands(
-  commands: readonly PaletteCommand[],
-  query: string,
-): PaletteCommand[] {
-  if (query.trim() === '') return [...commands];
-  return fuse.search(query).map((r) => r.item);
-}
-
 interface CommandPaletteProps {
-  readonly nav: NavigationStore;
   readonly inputMode: InputModeStore;
-  readonly onAction: (action: string, query: string) => void;
+  readonly onAction: (action: string) => void;
 }
 
 export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): React.ReactElement {
-  const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const filtered = filterCommands(PALETTE_COMMANDS, query);
   const { contentWidth, showTitleArt } = useLayoutContext();
 
-  const handleChange = useCallback((value: string) => {
-    setQuery(value);
-    setSelectedIndex(0);
-  }, []);
-
-  // Set input mode to text on mount to prevent global key interference
+  // Palette stays in navigation mode so q-to-quit works globally.
   React.useEffect(() => {
-    inputMode.set('text');
+    inputMode.set('navigation');
     return () => inputMode.set('navigation');
   }, [inputMode]);
 
   useInput((_input, key) => {
     if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, PALETTE_COMMANDS.length - 1));
     }
     if (key.upArrow) {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     }
-    if (key.return && filtered.length > 0) {
-      const cmd = filtered[selectedIndex];
+    if (key.return) {
+      const cmd = PALETTE_COMMANDS[selectedIndex];
       if (cmd) {
-        onAction(cmd.action, query);
+        onAction(cmd.action);
       }
     }
   });
@@ -80,15 +56,8 @@ export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): Re
     <Box flexDirection="column">
       <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
       <Text>{formatRuler(contentWidth)}</Text>
-      <Box marginTop={1}>
-        <Text>{'  > '}</Text>
-        <TextInput
-          placeholder="type a command..."
-          onChange={handleChange}
-        />
-      </Box>
       <Box flexDirection="column" marginTop={1}>
-        {filtered.map((cmd, i) => (
+        {PALETTE_COMMANDS.map((cmd, i) => (
           <Box key={cmd.action}>
             <Text>
               {'  '}
