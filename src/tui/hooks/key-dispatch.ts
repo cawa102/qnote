@@ -3,6 +3,7 @@ import type { InputModeStore } from './use-input-mode.js';
 
 interface KeyInfo {
   readonly escape: boolean;
+  readonly ctrl: boolean;
 }
 
 export interface DispatchOptions {
@@ -39,8 +40,14 @@ export function dispatchGlobalKey(
   // In text mode, only Esc is handled globally
   if (mode === 'text') return;
 
-  // q — quit from any screen (navigation mode only)
-  if (input === 'q') {
+  // Ctrl+Q — quit from any screen (navigation mode only)
+  if (input === 'q' && key.ctrl) {
+    exit();
+    return;
+  }
+
+  // q — quit from palette only (navigation mode only)
+  if (input === 'q' && currentScreen === 'palette') {
     exit();
     return;
   }

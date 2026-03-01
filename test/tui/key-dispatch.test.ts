@@ -43,7 +43,7 @@ describe('dispatchGlobalKey', () => {
       const nav = createNavigationStore();
       const exit = vi.fn();
 
-      dispatchGlobalKey('', { escape: true }, {
+      dispatchGlobalKey('', { escape: true, ctrl: false }, {
         nav,
         inputMode: createInputModeStore(),
         currentScreen: 'palette',
@@ -57,7 +57,7 @@ describe('dispatchGlobalKey', () => {
     it('pops navigation when stack depth > 1', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
 
-      dispatchGlobalKey('', { escape: true }, opts);
+      dispatchGlobalKey('', { escape: true, ctrl: false }, opts);
 
       expect(opts.nav.current().screen).toBe('palette');
       expect(opts.exit).not.toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe('dispatchGlobalKey', () => {
     it('works in text mode', () => {
       const opts = createOptions({ currentScreen: 'search', mode: 'text' });
 
-      dispatchGlobalKey('', { escape: true }, opts);
+      dispatchGlobalKey('', { escape: true, ctrl: false }, opts);
 
       // Esc should still work in text mode — it pops
       expect(opts.nav.current().screen).not.toBe('search');
@@ -76,7 +76,7 @@ describe('dispatchGlobalKey', () => {
       const opts = createOptions({ currentScreen: 'editor' });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey('', { escape: true }, opts);
+      dispatchGlobalKey('', { escape: true, ctrl: false }, opts);
 
       // Esc should NOT pop — EditorScreen handles its own Esc
       expect(opts.nav.stackDepth()).toBe(depthBefore);
@@ -85,18 +85,46 @@ describe('dispatchGlobalKey', () => {
   });
 
   describe('q key', () => {
-    it('exits in navigation mode', () => {
-      const opts = createOptions();
+    it('exits from palette screen', () => {
+      const opts = createOptions({ currentScreen: 'palette' });
 
-      dispatchGlobalKey('q', { escape: false }, opts);
+      dispatchGlobalKey('q', { escape: false, ctrl: false }, opts);
 
       expect(opts.exit).toHaveBeenCalled();
+    });
+
+    it('does not exit from non-palette screens', () => {
+      const opts = createOptions({ currentScreen: 'noteList' });
+
+      dispatchGlobalKey('q', { escape: false, ctrl: false }, opts);
+
+      expect(opts.exit).not.toHaveBeenCalled();
     });
 
     it('is ignored in text mode', () => {
       const opts = createOptions({ mode: 'text' });
 
-      dispatchGlobalKey('q', { escape: false }, opts);
+      dispatchGlobalKey('q', { escape: false, ctrl: false }, opts);
+
+      expect(opts.exit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Ctrl+Q key', () => {
+    it('exits from any navigation-mode screen', () => {
+      for (const screen of ['palette', 'noteList', 'notePreview'] as const) {
+        const opts = createOptions({ currentScreen: screen });
+
+        dispatchGlobalKey('q', { escape: false, ctrl: true }, opts);
+
+        expect(opts.exit).toHaveBeenCalled();
+      }
+    });
+
+    it('is ignored in text mode', () => {
+      const opts = createOptions({ currentScreen: 'search', mode: 'text' });
+
+      dispatchGlobalKey('q', { escape: false, ctrl: true }, opts);
 
       expect(opts.exit).not.toHaveBeenCalled();
     });
@@ -106,7 +134,7 @@ describe('dispatchGlobalKey', () => {
     it('pushes palette when not already on palette', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
 
-      dispatchGlobalKey(':', { escape: false }, opts);
+      dispatchGlobalKey(':', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.current().screen).toBe('palette');
     });
@@ -115,7 +143,7 @@ describe('dispatchGlobalKey', () => {
       const opts = createOptions({ currentScreen: 'palette' });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey(':', { escape: false }, opts);
+      dispatchGlobalKey(':', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
@@ -125,7 +153,7 @@ describe('dispatchGlobalKey', () => {
     it('pushes search when not on search', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
 
-      dispatchGlobalKey('/', { escape: false }, opts);
+      dispatchGlobalKey('/', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.current().screen).toBe('search');
     });
@@ -133,7 +161,7 @@ describe('dispatchGlobalKey', () => {
     it('pushes search from palette', () => {
       const opts = createOptions({ currentScreen: 'palette' });
 
-      dispatchGlobalKey('/', { escape: false }, opts);
+      dispatchGlobalKey('/', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.current().screen).toBe('search');
     });
@@ -143,7 +171,7 @@ describe('dispatchGlobalKey', () => {
     it('pushes capture from noteList', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
 
-      dispatchGlobalKey('c', { escape: false }, opts);
+      dispatchGlobalKey('c', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.current().screen).toBe('capture');
     });
@@ -152,7 +180,7 @@ describe('dispatchGlobalKey', () => {
       const opts = createOptions({ currentScreen: 'palette' });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey('c', { escape: false }, opts);
+      dispatchGlobalKey('c', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
@@ -165,7 +193,7 @@ describe('dispatchGlobalKey', () => {
         currentFilePath: '/notes/my-note.md',
       });
 
-      dispatchGlobalKey('e', { escape: false }, opts);
+      dispatchGlobalKey('e', { escape: false, ctrl: false }, opts);
 
       const entry = opts.nav.current();
       expect(entry.screen).toBe('editor');
@@ -178,7 +206,7 @@ describe('dispatchGlobalKey', () => {
       const opts = createOptions({ currentScreen: 'noteList' });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey('e', { escape: false }, opts);
+      dispatchGlobalKey('e', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
@@ -187,7 +215,7 @@ describe('dispatchGlobalKey', () => {
       const opts = createOptions({ currentScreen: 'notePreview' });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey('e', { escape: false }, opts);
+      dispatchGlobalKey('e', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.stackDepth()).toBe(depthBefore);
     });
@@ -200,7 +228,7 @@ describe('dispatchGlobalKey', () => {
       });
       const depthBefore = opts.nav.stackDepth();
 
-      dispatchGlobalKey('e', { escape: false }, opts);
+      dispatchGlobalKey('e', { escape: false, ctrl: false }, opts);
 
       expect(opts.nav.stackDepth()).toBe(depthBefore);
     });

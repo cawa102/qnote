@@ -46,6 +46,23 @@ describe('getHintsForScreen', () => {
     const keys = hints.map((h) => h.key);
     expect(keys).toContain('^S');
   });
+
+  it('noteList hints contain ^Q quit entry', () => {
+    const hints = getHintsForScreen('noteList');
+    expect(hints).toContainEqual({ key: '^Q', desc: 'quit' });
+  });
+
+  it('notePreview hints contain ^Q quit entry', () => {
+    const hints = getHintsForScreen('notePreview');
+    expect(hints).toContainEqual({ key: '^Q', desc: 'quit' });
+  });
+
+  it('palette hints use q (not ^Q) for quit', () => {
+    const hints = getHintsForScreen('palette');
+    expect(hints).toContainEqual({ key: 'q', desc: 'quit' });
+    const keys = hints.map((h) => h.key);
+    expect(keys).not.toContain('^Q');
+  });
 });
 
 describe('formatHintEntry', () => {

@@ -18,12 +18,14 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: '/', desc: 'search' },
     { key: 'n', desc: 'new' },
     { key: 'Esc', desc: 'back' },
+    { key: '^Q', desc: 'quit' },
   ],
   notePreview: [
     { key: ':', desc: 'cmd' },
     { key: 'e', desc: 'edit' },
     { key: 'p', desc: 'raw' },
     { key: 'Esc', desc: 'back' },
+    { key: '^Q', desc: 'quit' },
   ],
   search: [
     { key: '↑↓', desc: 'select' },
