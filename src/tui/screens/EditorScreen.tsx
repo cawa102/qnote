@@ -140,6 +140,15 @@ export function toggleTreeNode(root: FileTreeNode, targetPath: string): FileTree
  * Determine the next focus area when a Ctrl key is pressed for header editing.
  * Returns null if the key doesn't correspond to a header focus action.
  */
+/**
+ * Pure function: determine buffer switch direction from Ctrl+Arrow key press.
+ */
+export function handleCtrlArrow(key: { rightArrow: boolean; leftArrow: boolean }): 'next' | 'prev' | null {
+  if (key.rightArrow) return 'next';
+  if (key.leftArrow) return 'prev';
+  return null;
+}
+
 export function getNextHeaderFocus(current: FocusArea, key: string): FocusArea | null {
   if (current === 'fileTree') return null;
   if (key === 't') return 'headerTitle';
@@ -452,6 +461,13 @@ export function EditorScreen({
         setFocus(next.focus);
         return;
       }
+      // Ctrl+Right/Left — switch buffer
+      const arrowDir = handleCtrlArrow(key);
+      if (arrowDir) {
+        setBufferManager((prev) => arrowDir === 'next' ? prev.nextBuffer() : prev.prevBuffer());
+        setScrollOffset(0);
+        return;
+      }
       // M-4: Ctrl+W — close buffer with dirty check
       if (input === 'w') {
         if (active) {
@@ -557,15 +573,6 @@ export function EditorScreen({
     );
   }
 
-  // No active buffer
-  if (!active) {
-    return (
-      <Box flexDirection="column">
-        <Text dimColor>No file open. Use file tree (Ctrl+E) or command palette (:) to open a note.</Text>
-      </Box>
-    );
-  }
-
   return (
     <Box flexDirection="row" width={contentWidth} height={rows - 1}>
       {/* File tree sidebar */}
@@ -594,26 +601,28 @@ export function EditorScreen({
         {/* Buffer tabs */}
         <BufferTabs
           buffers={bufferInfos}
-          activeId={active.id}
+          activeId={active?.id ?? ''}
           width={editorWidth}
         />
 
-        {/* Header bar */}
-        <EditorHeaderBar
-          title={headerTitle}
-          tags={[...headerTags]}
-          status={saveStatus}
-          mode={mode}
-          width={editorWidth}
-          focused={focus}
-          onTitleChange={(value) => {
-            if (!suppressHeaderChangeRef.current) setHeaderTitle(value);
-          }}
-          onTagsChange={(tags) => {
-            if (!suppressHeaderChangeRef.current) setHeaderTags(tags);
-          }}
-          onFocusEditor={() => setFocus('editor')}
-        />
+        {/* Header bar (only when a buffer is active) */}
+        {active && (
+          <EditorHeaderBar
+            title={headerTitle}
+            tags={[...headerTags]}
+            status={saveStatus}
+            mode={mode}
+            width={editorWidth}
+            focused={focus}
+            onTitleChange={(value) => {
+              if (!suppressHeaderChangeRef.current) setHeaderTitle(value);
+            }}
+            onTagsChange={(tags) => {
+              if (!suppressHeaderChangeRef.current) setHeaderTags(tags);
+            }}
+            onFocusEditor={() => setFocus('editor')}
+          />
+        )}
 
         {/* Error banner */}
         {errorMessage && (
@@ -622,14 +631,18 @@ export function EditorScreen({
           </Box>
         )}
 
-        {/* Edit area or Preview */}
+        {/* Edit area or Preview or Placeholder */}
         <Box flexGrow={1}>
-          {mode === 'edit' && renderedOutput ? (
-            <Text>{renderedOutput.content}</Text>
-          ) : mode === 'preview' ? (
-            <Text>{previewContent}</Text>
+          {active ? (
+            mode === 'edit' && renderedOutput ? (
+              <Text>{renderedOutput.content}</Text>
+            ) : mode === 'preview' ? (
+              <Text>{previewContent}</Text>
+            ) : (
+              <Text dimColor>Loading...</Text>
+            )
           ) : (
-            <Text dimColor>Loading...</Text>
+            <Text dimColor>Select a file from the tree (Ctrl+E)</Text>
           )}
         </Box>
       </Box>

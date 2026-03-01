@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { yamlQuote, getNextHeaderFocus, computeEditorLayout, SEPARATOR_WIDTH, nextCtrlEState, handleTreeKey } from '../../../src/tui/screens/EditorScreen.js';
+import { yamlQuote, getNextHeaderFocus, computeEditorLayout, SEPARATOR_WIDTH, nextCtrlEState, handleTreeKey, handleCtrlArrow } from '../../../src/tui/screens/EditorScreen.js';
 import type { FocusArea } from '../../../src/tui/editor/types.js';
 import type { FileTreeNode } from '../../../src/tui/editor/types.js';
 
@@ -272,6 +272,20 @@ describe('handleTreeKey', () => {
   it('unrecognized key is noop', () => {
     const result = handleTreeKey('x', tree, 0);
     expect(result).toEqual({ type: 'noop' });
+  });
+});
+
+describe('handleCtrlArrow', () => {
+  it('returns next for rightArrow', () => {
+    expect(handleCtrlArrow({ rightArrow: true, leftArrow: false })).toBe('next');
+  });
+
+  it('returns prev for leftArrow', () => {
+    expect(handleCtrlArrow({ rightArrow: false, leftArrow: true })).toBe('prev');
+  });
+
+  it('returns null when neither arrow is pressed', () => {
+    expect(handleCtrlArrow({ rightArrow: false, leftArrow: false })).toBeNull();
   });
 });
 

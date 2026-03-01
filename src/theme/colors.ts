@@ -12,6 +12,7 @@ export interface Theme {
   readonly bold: (text: string) => string;
   readonly heading: (text: string) => string;
   readonly keyBadge: (text: string) => string;
+  readonly tabActive: (text: string) => string;
 }
 
 const supportsColor = chalk.level >= 3; // True Color (level 3 = 16M colors)
@@ -30,4 +31,7 @@ export const theme: Theme = {
   keyBadge: supportsColor
     ? chalk.bgHex('#56b6c2').hex('#1e1e2e')
     : chalk.bgCyan.black,
+  tabActive: supportsColor
+    ? chalk.bgHex('#98c379').hex('#1e1e2e')
+    : chalk.bgGreen.black,
 };

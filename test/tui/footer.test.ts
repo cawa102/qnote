@@ -41,6 +41,21 @@ describe('getHintsForScreen', () => {
     expect(keys).toContain('^E');
   });
 
+  it('editor hints contain ^→/← tab switching entry', () => {
+    const hints = getHintsForScreen('editor');
+    expect(hints).toContainEqual({ key: '^→/←', desc: 'tab' });
+  });
+
+  it('editor ^→/← hint is positioned between ^E and ^T', () => {
+    const hints = getHintsForScreen('editor');
+    const keys = hints.map((h) => h.key);
+    const eIndex = keys.indexOf('^E');
+    const tabIndex = keys.indexOf('^→/←');
+    const tIndex = keys.indexOf('^T');
+    expect(tabIndex).toBeGreaterThan(eIndex);
+    expect(tabIndex).toBeLessThan(tIndex);
+  });
+
   it('capture hints contain ^S entry', () => {
     const hints = getHintsForScreen('capture');
     const keys = hints.map((h) => h.key);

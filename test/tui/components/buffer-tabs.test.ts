@@ -129,6 +129,31 @@ describe('BufferTabs', () => {
     expect(output).toContain('[+]');
   });
 
+  it('active tab uses different styling from inactive tabs', () => {
+    const buffers = [
+      makeBuffer({ id: 'a', title: 'Active' }),
+      makeBuffer({ id: 'b', title: 'Inactive' }),
+    ];
+    const { lastFrame } = render(
+      React.createElement(BufferTabs, {
+        buffers,
+        activeId: 'a',
+        width: 60,
+      }),
+    );
+    const output = lastFrame();
+    // Active and inactive tabs should both be present
+    expect(output).toContain('Active');
+    expect(output).toContain('Inactive');
+    // The ANSI escape sequences around "Active" and "Inactive" should differ
+    // (active uses tabActive inverse, inactive uses dim)
+    const activeMatch = output.match(/(\x1b\[[^m]*m)*\s*Active\s*(\x1b\[[^m]*m)*/);
+    const inactiveMatch = output.match(/(\x1b\[[^m]*m)*\s*Inactive\s*(\x1b\[[^m]*m)*/);
+    expect(activeMatch).toBeTruthy();
+    expect(inactiveMatch).toBeTruthy();
+    expect(activeMatch![0]).not.toBe(inactiveMatch![0]);
+  });
+
   it('shows ellipsis when tabs overflow', () => {
     const buffers = Array.from({ length: 10 }, (_, i) =>
       makeBuffer({ id: `buf-${i}`, title: `Very Long Note Title ${i}` }),

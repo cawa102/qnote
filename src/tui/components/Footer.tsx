@@ -40,6 +40,7 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: '^S', desc: 'save' },
     { key: '^P', desc: 'preview' },
     { key: '^E', desc: 'tree' },
+    { key: '^→/←', desc: 'tab' },
     { key: '^T', desc: 'title' },
     { key: '^G', desc: 'tags' },
     { key: 'Esc', desc: 'back' },

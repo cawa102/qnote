@@ -22,12 +22,13 @@ describe('theme', () => {
     expect(typeof theme.bold).toBe('function');
     expect(typeof theme.heading).toBe('function');
     expect(typeof theme.keyBadge).toBe('function');
+    expect(typeof theme.tabActive).toBe('function');
   });
 
   it('returns strings from all color functions', () => {
     const keys: readonly (keyof Theme)[] = [
       'accent', 'accentBold', 'tag', 'link', 'dim',
-      'error', 'warning', 'selected', 'bold', 'heading', 'keyBadge',
+      'error', 'warning', 'selected', 'bold', 'heading', 'keyBadge', 'tabActive',
     ] as const;
 
     for (const key of keys) {
@@ -58,6 +59,20 @@ describe('theme', () => {
   it('keyBadge contains the input text', () => {
     expect(theme.keyBadge('q')).toContain('q');
     expect(theme.keyBadge('Enter')).toContain('Enter');
+  });
+
+  it('tabActive returns a non-empty string containing input text', () => {
+    const result = theme.tabActive('My Tab');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).toContain('My Tab');
+  });
+
+  it('tabActive is a distinct theme function from selected', () => {
+    // tabActive uses inverse green bg (bgGreen.black or bgHex),
+    // while selected uses green bold text — they are different functions
+    expect(theme.tabActive).not.toBe(theme.selected);
+    expect(theme.tabActive).not.toBe(theme.dim);
   });
 });
 
