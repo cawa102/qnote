@@ -87,14 +87,12 @@ export function SearchScreen({
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth} height={3}>
+      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth}>
         <Text> 検索 {'>'} </Text>
         <TextInput placeholder="search notes..." onChange={handleChange} />
       </Box>
 
-      {hint.length > 0 && (
-        <Text dimColor>  {hint}</Text>
-      )}
+      <Text dimColor>  {hint || ' '}</Text>
 
       <Box flexDirection="column" marginTop={1}>
         {results.map((result, i) => {

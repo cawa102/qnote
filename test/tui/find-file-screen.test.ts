@@ -114,16 +114,25 @@ describe('buildDisplayEntries', () => {
 });
 
 describe('FindFileScreen rendering', () => {
-  it('renders search input with bold border box', () => {
+  it('shows loading state initially', () => {
     const { lastFrame } = renderFindFile();
+    const frame = stripAnsi(lastFrame() ?? '');
+    expect(frame).toContain('読み込み中');
+  });
+
+  it('renders search input with bold border box after loading', async () => {
+    const { lastFrame } = renderFindFile();
+    // Wait for async scanNoteFiles mock to resolve and trigger re-render
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const frame = stripAnsi(lastFrame() ?? '');
     // Bold border box has corner characters ┏ and ┗ (not from ruler)
     expect(frame).toContain('┏');
     expect(frame).toContain('┗');
   });
 
-  it('renders label text inside the bordered area', () => {
+  it('renders label text inside the bordered area after loading', async () => {
     const { lastFrame } = renderFindFile();
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const frame = lastFrame() ?? '';
     expect(frame).toContain('ファイル検索');
   });

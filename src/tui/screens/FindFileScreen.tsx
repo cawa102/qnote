@@ -53,8 +53,10 @@ export function FindFileScreen({
 }: FindFileScreenProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [allFiles, setAllFiles] = useState<readonly ScannedFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [fileState, setFileState] = useState<{
+    readonly files: readonly ScannedFile[];
+    readonly isLoading: boolean;
+  }>({ files: [], isLoading: true });
   const { contentWidth } = useLayoutContext();
   const fuseRef = useRef<Fuse<ScannedFile> | null>(null);
 
@@ -73,13 +75,12 @@ export function FindFileScreen({
       try {
         const files = await scanNoteFiles(notesDir);
         if (!cancelled) {
-          setAllFiles(files);
           fuseRef.current = new Fuse([...files], FUSE_OPTIONS);
-          setIsLoading(false);
+          setFileState({ files, isLoading: false });
         }
       } catch {
         if (!cancelled) {
-          setIsLoading(false);
+          setFileState({ files: [], isLoading: false });
         }
       }
     })();
@@ -88,9 +89,9 @@ export function FindFileScreen({
 
   // Use the shared pure function for display entries
   const displayEntries = buildDisplayEntries(
-    allFiles,
+    fileState.files,
     debouncedQuery,
-    isLoading,
+    fileState.isLoading,
     fuseRef.current,
   );
 
@@ -114,21 +115,31 @@ export function FindFileScreen({
     }
   });
 
-  const fileCount = isLoading
-    ? '読み込み中...'
-    : allFiles.length === 0
-      ? 'ノートがありません'
-      : `${displayEntries.length} 件`;
+  // Show loading state without border to avoid re-render border corruption.
+  // Ink's log-update differential rendering breaks bordered boxes during
+  // async state changes. By deferring the border until data is ready,
+  // the border is only painted once (no diff update needed).
+  if (fileState.isLoading) {
+    return (
+      <Box flexDirection="column">
+        <Text dimColor>  読み込み中...</Text>
+      </Box>
+    );
+  }
+
+  const fileCount = fileState.files.length === 0
+    ? 'ノートがありません'
+    : `${displayEntries.length} 件`;
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth} height={query === '' ? 4 : 3}>
+      <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth} flexShrink={0}>
         <Text> ファイル検索 {'>'} </Text>
         <TextInput placeholder="search files..." onChange={handleChange} />
       </Box>
       <Text dimColor>  {fileCount}</Text>
 
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column">
         {displayEntries.map((file, i) => {
           const isSelected = i === selectedIndex;
           return (
