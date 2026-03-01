@@ -40,7 +40,7 @@ The TUI uses a stack-based single-pane navigation model. Key shortcuts depend on
 
 | Screen | Description | Input Mode |
 |--------|-------------|------------|
-| Command Palette | Home screen — fuzzy command search | text |
+| Command Palette | Home screen — icon grid with shortcut keys | navigation |
 | Note List | Recent notes list | navigation |
 | Note Preview | Markdown render with wikilink jumps (1-9) | navigation |
 | Find File | Fuzzy file name search (fuse.js) | text |
@@ -101,6 +101,16 @@ sudo apt install build-essential python3   # Linux
 
 npm rebuild better-sqlite3
 ```
+
+### Bordered Box rendering corruption after async re-render
+
+**Symptom**: Border top line merges with content, bottom border disappears on screens with async data loading.
+
+**Root cause**: Ink's `log-update` differential terminal rendering can corrupt bordered boxes when async state changes trigger re-renders. `height=3` (border 2 + content 1) is a zero-margin boundary condition.
+
+**Design rule**: Never use explicit `height` on bordered Box components with async state. Defer border rendering until data is loaded so the border is only painted once. See `docs/codex/2026-03-01-findfile-border-height-bug.md` for full analysis.
+
+**Note**: This bug cannot be reproduced in `ink-testing-library` because it uses `debug: true` which bypasses `log-update` entirely.
 
 ### Arrow keys not working in command palette
 

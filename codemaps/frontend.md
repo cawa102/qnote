@@ -1,11 +1,11 @@
 # Frontend (TUI) Codemap
 
-> Freshness: 2026-02-28 21:30 JST | Commit: a02370b
+> Freshness: 2026-03-01 15:50 JST | Commit: 4fbdb90
 
 ## App Root
 
 ```
-src/tui/App.tsx (248 lines)
+src/tui/App.tsx (257 lines)
 ├── Imports: all 7 screens, CenteredLayout, Footer, LayoutProvider
 ├── Creates: navStore (NavigationStore), inputModeStore (InputModeStore)
 ├── State: previewNote, noteListItems, noteListTitle
@@ -18,24 +18,25 @@ src/tui/App.tsx (248 lines)
 
 | Screen | Lines | Input Mode | Key Features |
 |--------|-------|------------|--------------|
-| CommandPalette | 106 | text | Fuse.js fuzzy search, useCallback onChange fix |
-| FindFileScreen | 149 | text | Fuse.js fuzzy file name search, 100-item limit, loading state |
+| CommandPalette | 142 | navigation | Responsive icon grid with bold borders, shortcut keys 1-6 |
+| FindFileScreen | 159 | text | Deferred border rendering (async load), Fuse.js fuzzy search, 100-item limit |
 | NoteList | 74 | navigation | Up/down selection, Enter → preview |
 | NotePreview | 126 | navigation | Markdown render, wikilink jump 1-9, backlinks |
-| SearchScreen | 123 | text | Debounced FTS5, CJK 3-char hint |
-| CaptureScreen | 136 | text | Title input, Tab → editor, CJK slug |
-| EditorScreen | 499 | text | Multi-buffer, syntax highlight, file tree, preview |
+| SearchScreen | 120 | text | Debounced FTS5, stable hint line, no explicit height on border |
+| CaptureScreen | 157 | text | Two-phase input (title → body), Tab → editor, CJK slug |
+| EditorScreen | 705 | text | Multi-buffer, syntax highlight, file tree, preview, header editing |
 
-## Components (6)
+## Components (7)
 
 | Component | Lines | Purpose |
 |-----------|-------|---------|
-| Footer | 30 | Screen-specific hint text (Record<ScreenName, string>) |
-| CenteredLayout | 30 | Horizontal centering via LayoutContext |
-| TitleBanner | 61 | ASCII art "Queen Note" with 3D block shadow |
+| Footer | 92 | Context-aware hint text with mode-specific shortcuts |
+| CenteredLayout | 29 | Horizontal centering via LayoutContext |
+| TitleBanner | 62 | ASCII art "Queen Note" with 3D block shadow |
 | BufferTabs | 159 | Open file tabs with scroll/ellipsis logic |
-| EditorHeaderBar | 123 | File path, dirty marker, save status |
-| FileTree | 91 | Expandable directory tree navigation |
+| EditorHeaderBar | 189 | File path, dirty marker, save status, inline title/tag editing |
+| FileTree | 96 | Expandable directory tree navigation |
+| tag-navigation | 63 | Tag list navigation helpers for NotePreview |
 
 ## Hooks (6)
 
@@ -48,7 +49,7 @@ src/tui/App.tsx (248 lines)
 | layout-context | 25 | React context | LayoutProvider + useLayoutContext |
 | use-debounce | 44 | React hook + util | debounce(fn, ms), useDebounce(value, ms) |
 
-## Editor Engine (6 files, ~1,108 lines)
+## Editor Engine (6 files, ~1,267 lines)
 
 ```
 TextBuffer (496 lines) ─── Immutable line-based text editing
@@ -68,7 +69,7 @@ EditorScreen.tsx ─── Uses all below:
     └── file-tree-builder (99 lines) ─── Recursive .md directory scan
 ```
 
-## Key Dispatch (key-dispatch.ts, 70 lines)
+## Key Dispatch (key-dispatch.ts, 77 lines)
 
 ```
 dispatchGlobalKey(input, key, options):
@@ -95,11 +96,19 @@ dispatchGlobalKey(input, key, options):
 ## Import Graph (Screens → Dependencies)
 
 ```
-CommandPalette → theme, format, layout-context, TitleBanner, Fuse, @inkjs/ui TextInput
+CommandPalette → theme, format, layout-context, TitleBanner
 FindFileScreen → theme, format, layout-context, debounce, file-scanner, Fuse, @inkjs/ui TextInput
 NoteList       → theme, format, layout-context
-NotePreview    → theme, format, layout-context, render-markdown, NoteService
+NotePreview    → theme, format, layout-context, render-markdown, NoteService, tag-navigation
 SearchScreen   → theme, format, layout-context, SearchIndex, debounce, @inkjs/ui TextInput
 CaptureScreen  → theme, format, layout-context, NoteService, @inkjs/ui TextInput
 EditorScreen   → editor/*, components/*, render-markdown, NoteService
 ```
+
+## Known Ink Rendering Constraints
+
+- **Bordered boxes + async re-render**: Ink's `log-update` differential terminal rendering
+  can corrupt borders during async state changes. Workaround: defer border rendering until
+  data is loaded (FindFileScreen pattern). See `docs/codex/2026-03-01-findfile-border-height-bug.md`.
+- **ink-testing-library uses `debug: true`**: Bypasses `log-update` entirely, so terminal-specific
+  rendering bugs cannot be reproduced in unit tests.

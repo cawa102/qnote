@@ -1,8 +1,8 @@
 # Architecture Codemap
 
-> Freshness: 2026-02-28 21:30 JST | Commit: a02370b
+> Freshness: 2026-03-01 15:50 JST | Commit: 4fbdb90
 
-## Layer Overview (~5,081 lines)
+## Layer Overview (~5,647 lines)
 
 ```
 bin/qnote.ts ─── CLI Entry Point (commander.js)
@@ -11,7 +11,7 @@ bin/qnote.ts ─── CLI Entry Point (commander.js)
      │
      ├── src/tui/App.tsx ─── Ink 5 + React 18 TUI root
      │   ├── 7 screens (palette, noteList, notePreview, findFile, search, capture, editor)
-     │   ├── 6 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree)
+     │   ├── 7 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree, tag-navigation)
      │   ├── 6 hooks (navigation, input-mode, global-keys, layout, layout-context, debounce)
      │   └── editor engine (text-buffer, text-editor, buffer-manager, syntax, renderer, file-tree)
      │
@@ -28,7 +28,7 @@ bin/qnote.ts ─── CLI Entry Point (commander.js)
      │
      └── src/theme/ ─── Semantic Colors + Formatting
          ├── colors.ts (True Color + ANSI fallback)
-         ├── format.ts (tags, dates, rulers, indicators)
+         ├── format.ts (tags, dates, rulers, indicators, palette grid layout)
          └── relative-time.ts (Japanese relative time)
 ```
 
@@ -47,6 +47,7 @@ Keyboard → key-dispatch.ts → NavigationStore (stack)
 
 FindFileScreen flow (no NoteService dependency):
   scanNoteFiles() → fs/promises → fuse.js fuzzy filter → nav.push('editor')
+  NOTE: Border deferred until async load completes (Ink log-update workaround)
 ```
 
 ## Key Patterns
@@ -60,6 +61,7 @@ FindFileScreen flow (no NoteService dependency):
 | Factory Functions | createNavigationStore, TextBuffer.create | Encapsulated construction |
 | Pure Functions | key-dispatch, renderer, syntax-highlighter, buildDisplayEntries | Testable, no side effects |
 | Symlink Protection | file-scanner, file-tree-builder | realpath + rootPrefix check |
+| Deferred Rendering | FindFileScreen | Border rendered only after async load to avoid Ink diff corruption |
 
 ## Screen Navigation (Stack-Based)
 
@@ -83,7 +85,7 @@ Esc = pop stack | ':' = push palette | '/' = push search
 'text' mode:       only Esc + Ctrl combos + arrow keys active
 
 Screens set mode on mount, restore on unmount:
-  CommandPalette → 'text' (TextInput for search)
+  CommandPalette → 'navigation' (grid selection, shortcut keys)
   FindFileScreen → 'text' (TextInput for file search)
   SearchScreen   → 'text' (TextInput for query)
   CaptureScreen  → 'text' (TextInput for title)
@@ -96,11 +98,11 @@ Screens set mode on mount, restore on unmount:
 
 | Layer | Files | Lines | Key Technologies |
 |-------|-------|-------|-----------------|
-| TUI | 27 | ~3,640 | Ink 5, React 18, @inkjs/ui, fuse.js |
-| Storage | 6 | ~774 | better-sqlite3, FTS5, gray-matter, fs/promises |
+| TUI | 28 | ~3,960 | Ink 5, React 18, @inkjs/ui, fuse.js |
+| Storage | 6 | ~785 | better-sqlite3, FTS5, gray-matter, fs/promises |
 | Core | 3 | ~195 | NoteService, ConfigService |
-| Theme | 4 | ~90 | chalk |
+| Theme | 4 | ~108 | chalk |
 | CLI | 2 | ~163 | commander.js |
-| Types | 1 | ~166 | TypeScript types + error hierarchy |
+| Types | 1 | ~201 | TypeScript types + error hierarchy |
 | Entry | 1 | ~150 | commander + Ink fullscreen |
-| **Total** | **44** | **~5,081** | |
+| **Total** | **45** | **~5,647** | |

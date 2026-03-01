@@ -63,7 +63,7 @@ bin/qnote.ts        → CLI entry (commander.js)
 src/cli/            → CLI command handlers
 src/tui/            → Ink 5 + React 18 TUI
   screens/          → 7 screens (palette, noteList, notePreview, findFile, search, capture, editor)
-  components/       → 6 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree)
+  components/       → 7 components (Footer, CenteredLayout, TitleBanner, BufferTabs, EditorHeaderBar, FileTree, tag-navigation)
   hooks/            → 6 hooks (navigation, input-mode, global-keys, layout, layout-context, debounce)
   editor/           → Editor engine (text-buffer, text-editor, buffer-manager, syntax, renderer, file-tree)
 src/core/           → Business logic (NoteService, ConfigService)

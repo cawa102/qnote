@@ -111,7 +111,7 @@ export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): Re
   return (
     <Box flexDirection="column">
       <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
-      <Text>{'      ' + formatRuler(contentWidth - 12)}</Text>
+      <Text>{'    ' + formatRuler(contentWidth - 8)}</Text>
       <Box flexDirection="column" marginTop={layout.separatorGap} paddingLeft={layout.leftPad} gap={layout.rowGap}>
         {rows.map((row, rowIdx) => (
           <Box key={rowIdx} flexDirection="row" gap={layout.columnGap}>

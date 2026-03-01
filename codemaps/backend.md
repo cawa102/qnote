@@ -1,6 +1,6 @@
 # Backend (Core + Storage + CLI) Codemap
 
-> Freshness: 2026-02-28 21:30 JST | Commit: a02370b
+> Freshness: 2026-03-01 15:50 JST | Commit: 4fbdb90
 
 ## Core Layer
 
@@ -31,7 +31,7 @@ class NoteService:
     close()           → void
 ```
 
-### ConfigService (src/core/config-service.ts, 53 lines)
+### ConfigService (src/core/config-service.ts, 52 lines)
 
 ```
 class ConfigService (static):
@@ -45,7 +45,7 @@ class ConfigService (static):
 
 ## Storage Layer
 
-### NoteRepository (src/storage/note-repository.ts, 183 lines)
+### NoteRepository (src/storage/note-repository.ts, 193 lines)
 
 ```
 class NoteRepository:
@@ -134,7 +134,7 @@ extractWikiLinks(content: string) → WikiLink[]
 
 ## CLI Layer
 
-### Commands (src/cli/commands.ts, 162 lines)
+### Commands (src/cli/commands.ts, 161 lines)
 
 ```
 createCommands(notesDir, configDir?) → CommandHandlers:
