@@ -1,9 +1,15 @@
-import { readFile, writeFile, unlink, readdir, mkdir, rename, access } from 'node:fs/promises';
+import { readFile, writeFile, unlink, readdir, mkdir, rename } from 'node:fs/promises';
 import { join, extname, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter.js';
 import type { Note, NoteMeta } from '../types.js';
-import { NoteNotFoundError, FileWriteError } from '../types.js';
+import {
+  NoteNotFoundError,
+  FileWriteError,
+  InvalidTitleError,
+  TitleTooLongError,
+  SlugCollisionError,
+} from '../types.js';
 
 export interface CreateNoteInput {
   readonly title: string;
@@ -19,21 +25,24 @@ export interface UpdateNoteInput {
   readonly modifiedTimestamp?: string;
 }
 
-const MAX_SLUG_LENGTH = 200;
+const MAX_FILENAME_BYTES = 252;
+
+// Forbidden filesystem characters: / \ : * ? " < > |
+const FORBIDDEN_CHAR_RE = /[/\\:*?"<>|]/;
 
 export class NoteRepository {
   constructor(private readonly notesDir: string) {}
 
   async create(input: CreateNoteInput): Promise<Note> {
     const now = new Date().toISOString();
-    const slug = this.slugify(input.title);
+    const filename = this.toFilename(input.title);
     const dir = input.directory
       ? join(this.notesDir, input.directory)
       : this.notesDir;
 
     await mkdir(dir, { recursive: true });
 
-    const filePath = await this.resolveCollision(dir, slug);
+    const filePath = await this.checkCollision(dir, filename);
     const meta: NoteMeta = {
       title: input.title,
       tags: [...input.tags],
@@ -104,23 +113,31 @@ export class NoteRepository {
 
   // ─── Private helpers ────────────────────────────────────────────
 
-  private slugify(title: string): string {
-    const slug = title
-      .normalize('NFC')
-      .replace(/[^\p{L}\p{N}\s-]/gu, '')
-      .replace(/[\s]+/g, '-')
-      .toLowerCase()
+  private toFilename(title: string): string {
+    const normalized = title.normalize('NFC');
+
+    if (FORBIDDEN_CHAR_RE.test(normalized)) {
+      throw new InvalidTitleError(title);
+    }
+
+    const filename = normalized
+      .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
 
-    if (slug.length === 0) {
-      return this.timestampSlug();
+    if (filename.length === 0) {
+      return this.timestampFilename();
     }
 
-    return slug.slice(0, MAX_SLUG_LENGTH);
+    const byteLength = Buffer.byteLength(filename, 'utf-8');
+    if (byteLength > MAX_FILENAME_BYTES) {
+      throw new TitleTooLongError(title, byteLength, MAX_FILENAME_BYTES);
+    }
+
+    return filename;
   }
 
-  private timestampSlug(): string {
+  private timestampFilename(): string {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -131,32 +148,26 @@ export class NoteRepository {
     return `${year}-${month}-${day}-${hours}${minutes}${seconds}`;
   }
 
-  private async fileExists(filePath: string): Promise<boolean> {
+  private async checkCollision(dir: string, filename: string): Promise<string> {
+    const filePath = join(dir, `${filename}.md`);
+
+    let entries: string[];
     try {
-      await access(filePath);
-      return true;
+      const dirEntries = await readdir(dir);
+      entries = dirEntries.filter((e) => e.endsWith('.md'));
     } catch {
-      return false;
-    }
-  }
-
-  private async resolveCollision(dir: string, slug: string): Promise<string> {
-    const basePath = join(dir, `${slug}.md`);
-    if (!(await this.fileExists(basePath))) {
-      return basePath;
+      // Directory doesn't exist yet — no collision possible
+      return filePath;
     }
 
-    let suffix = 2;
-    while (suffix <= 1000) {
-      const candidatePath = join(dir, `${slug}-${suffix}.md`);
-      if (!(await this.fileExists(candidatePath))) {
-        return candidatePath;
+    const target = `${filename}.md`.toLowerCase();
+    for (const entry of entries) {
+      if (entry.toLowerCase() === target) {
+        throw new SlugCollisionError(filename, join(dir, entry));
       }
-      suffix++;
     }
 
-    // Extremely unlikely: 1000 collisions. Fall back to UUID.
-    return join(dir, `${slug}-${randomUUID().slice(0, 8)}.md`);
+    return filePath;
   }
 
   private async atomicWrite(filePath: string, content: string): Promise<void> {

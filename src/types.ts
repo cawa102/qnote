@@ -86,6 +86,36 @@ export class NoteSizeLimitError extends AppError {
   }
 }
 
+export class InvalidTitleError extends AppError {
+  readonly title: string;
+
+  constructor(title: string) {
+    super(
+      `Invalid title: "${title}" contains forbidden characters`,
+      'INVALID_TITLE',
+    );
+    this.title = title;
+    this.name = 'InvalidTitleError';
+  }
+}
+
+export class TitleTooLongError extends AppError {
+  readonly title: string;
+  readonly byteLength: number;
+  readonly maxBytes: number;
+
+  constructor(title: string, byteLength: number, maxBytes: number) {
+    super(
+      `Title too long: "${title}" produces filename of ${byteLength} bytes (max ${maxBytes})`,
+      'TITLE_TOO_LONG',
+    );
+    this.title = title;
+    this.byteLength = byteLength;
+    this.maxBytes = maxBytes;
+    this.name = 'TitleTooLongError';
+  }
+}
+
 // --- Data types ---
 
 export interface NoteMeta {

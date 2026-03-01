@@ -96,6 +96,21 @@ describe('types', () => {
     expect(sizeLimit.code).toBe('NOTE_SIZE_LIMIT');
     expect(sizeLimit.actualSize).toBe(2_000_000);
     expect(sizeLimit.maxSize).toBe(1_000_000);
+
+    const { InvalidTitleError, TitleTooLongError } = await import('../src/types.js');
+
+    const invalidTitle = new InvalidTitleError('A/B');
+    expect(invalidTitle).toBeInstanceOf(AppError);
+    expect(invalidTitle.code).toBe('INVALID_TITLE');
+    expect(invalidTitle.title).toBe('A/B');
+    expect(invalidTitle.message).toContain('forbidden characters');
+
+    const titleTooLong = new TitleTooLongError('Very long title', 300, 252);
+    expect(titleTooLong).toBeInstanceOf(AppError);
+    expect(titleTooLong.code).toBe('TITLE_TOO_LONG');
+    expect(titleTooLong.title).toBe('Very long title');
+    expect(titleTooLong.byteLength).toBe(300);
+    expect(titleTooLong.maxBytes).toBe(252);
   });
 
   it('NavigationState holds a stack of ScreenEntry', async () => {

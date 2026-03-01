@@ -134,6 +134,38 @@ describe('NoteService', () => {
     expect(result!.title).toBe('My Title Note');
   });
 
+  it('resolveWikiLink does not strip special chars from target', async () => {
+    await service.create({
+      title: 'Test',
+      tags: [],
+      content: 'Test content here.',
+    });
+
+    // Old code stripped '!' from 'Test!', normalizing to 'test', matching 'test.md'
+    // New code preserves '!', so 'Test!' doesn't match filename or title 'Test'
+    const result = service.resolveWikiLink('Test!');
+    expect(result).toBeNull();
+  });
+
+  it('resolveWikiLink matches filename case-insensitively', async () => {
+    const note = await service.create({
+      title: 'API Design',
+      tags: [],
+      content: 'API design content.',
+    });
+
+    const fileName = note.filePath.split('/').pop()?.replace('.md', '') ?? '';
+
+    // Should match regardless of case in the wikilink target
+    const upperResult = service.resolveWikiLink(fileName.toUpperCase());
+    expect(upperResult).not.toBeNull();
+    expect(upperResult!.title).toBe('API Design');
+
+    const lowerResult = service.resolveWikiLink(fileName.toLowerCase());
+    expect(lowerResult).not.toBeNull();
+    expect(lowerResult!.title).toBe('API Design');
+  });
+
   it('resolveWikiLink returns null for non-existent target', async () => {
     await service.create({
       title: 'Existing Note',

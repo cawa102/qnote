@@ -3,7 +3,12 @@ import { mkdtempSync, rmSync, readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { NoteRepository } from '../../src/storage/note-repository.js';
-import { NoteNotFoundError } from '../../src/types.js';
+import {
+  NoteNotFoundError,
+  InvalidTitleError,
+  TitleTooLongError,
+  SlugCollisionError,
+} from '../../src/types.js';
 
 describe('NoteRepository', () => {
   let tempDir: string;
@@ -29,7 +34,7 @@ describe('NoteRepository', () => {
 
     expect(note.meta.title).toBe('Test Note');
     expect(note.meta.tags).toEqual(['test']);
-    expect(note.filePath).toContain('test-note.md');
+    expect(note.filePath).toContain('Test-Note.md');
 
     const raw = readFileSync(note.filePath, 'utf-8');
     expect(raw).toContain('title: Test Note');
@@ -78,90 +83,127 @@ describe('NoteRepository', () => {
     expect(files).toHaveLength(0);
   });
 
-  // ─── CJK-aware slugify ─────────────────────────────────────────
+  // ─── toFilename: case preservation ────────────────────────────
 
-  it('slugifies English title', async () => {
+  it('preserves case in English title', async () => {
     const note = await repo.create({
       title: 'Hello World',
       tags: [],
       content: 'test',
     });
-    expect(note.filePath).toMatch(/hello-world\.md$/);
+    expect(note.filePath).toMatch(/Hello-World\.md$/);
   });
 
-  it('slugifies CJK title preserving characters', async () => {
+  it('preserves case in CJK title', async () => {
     const note = await repo.create({
       title: 'API認証のフロー',
       tags: [],
       content: 'test',
     });
-    // CJK characters should be preserved, spaces become hyphens
-    expect(note.filePath).toMatch(/api認証のフロー\.md$/);
+    expect(note.filePath).toMatch(/API認証のフロー\.md$/);
   });
 
-  it('slugifies mixed CJK and Latin', async () => {
+  it('preserves case in mixed CJK and Latin', async () => {
     const note = await repo.create({
       title: 'React コンポーネント設計',
       tags: [],
       content: 'test',
     });
-    expect(note.filePath).toMatch(/react-コンポーネント設計\.md$/);
+    expect(note.filePath).toMatch(/React-コンポーネント設計\.md$/);
   });
 
-  it('strips special characters from slug', async () => {
+  it('collapses consecutive spaces into single hyphen', async () => {
     const note = await repo.create({
-      title: 'Hello! @World# $Test%',
+      title: 'Hello   World',
       tags: [],
       content: 'test',
     });
-    expect(note.filePath).toMatch(/hello-world-test\.md$/);
+    expect(note.filePath).toMatch(/Hello-World\.md$/);
   });
 
-  it('truncates slug to 200 characters', async () => {
-    const longTitle = 'a'.repeat(300);
+  it('trims leading and trailing spaces', async () => {
     const note = await repo.create({
-      title: longTitle,
+      title: '  Trimmed Title  ',
       tags: [],
       content: 'test',
     });
-    const filename = note.filePath.split('/').pop()!;
-    // filename = slug + '.md', slug max 200
-    expect(filename.length).toBeLessThanOrEqual(200 + 3); // 200 + '.md'
+    expect(note.filePath).toMatch(/Trimmed-Title\.md$/);
   });
 
-  // ─── Empty slug fallback ────────────────────────────────────────
+  // ─── toFilename: forbidden characters → InvalidTitleError ────
 
-  it('falls back to timestamp slug when title produces empty slug', async () => {
+  it('throws InvalidTitleError for forbidden FS characters', async () => {
+    await expect(
+      repo.create({ title: 'A/B', tags: [], content: 'test' }),
+    ).rejects.toThrow(InvalidTitleError);
+  });
+
+  it('allows non-forbidden special characters in title', async () => {
     const note = await repo.create({
-      title: '!!!???',
+      title: "Node.js It's a (test) note_v2",
       tags: [],
       content: 'test',
     });
-    // Slug should be a timestamp fallback like 2026-02-27-103000
+    expect(note.filePath).toMatch(/Node\.js-It's-a-\(test\)-note_v2\.md$/);
+  });
+
+  it('throws InvalidTitleError for asterisk in title', async () => {
+    await expect(
+      repo.create({ title: 'Test*Note', tags: [], content: 'test' }),
+    ).rejects.toThrow(InvalidTitleError);
+  });
+
+  it('throws InvalidTitleError for pipe character', async () => {
+    await expect(
+      repo.create({ title: 'A|B', tags: [], content: 'test' }),
+    ).rejects.toThrow(InvalidTitleError);
+  });
+
+  // ─── toFilename: byte-length check → TitleTooLongError ───────
+
+  it('throws TitleTooLongError when filename exceeds 252 bytes', async () => {
+    // Each CJK char is 3 bytes in UTF-8, so 85 CJK chars = 255 bytes > 252
+    const longTitle = '漢'.repeat(85);
+    await expect(
+      repo.create({ title: longTitle, tags: [], content: 'test' }),
+    ).rejects.toThrow(TitleTooLongError);
+  });
+
+  it('allows title exactly at 252-byte limit', async () => {
+    // 84 CJK chars = 252 bytes exactly
+    const title = '漢'.repeat(84);
+    const note = await repo.create({ title, tags: [], content: 'test' });
+    expect(note.filePath).toMatch(/\.md$/);
+  });
+
+  // ─── Empty title fallback ─────────────────────────────────────
+
+  it('falls back to timestamp when title produces empty filename', async () => {
+    const note = await repo.create({
+      title: '   ',
+      tags: [],
+      content: 'test',
+    });
+    // Timestamp format: 2026-03-01-114500
     expect(note.filePath).toMatch(/\d{4}-\d{2}-\d{2}-\d{6}\.md$/);
   });
 
-  // ─── Collision detection ────────────────────────────────────────
+  // ─── Collision detection ──────────────────────────────────────
 
-  it('appends numeric suffix on slug collision', async () => {
-    const note1 = await repo.create({ title: 'Same Name', tags: [], content: 'first' });
-    const note2 = await repo.create({ title: 'Same Name', tags: [], content: 'second' });
+  it('throws SlugCollisionError on exact filename collision', async () => {
+    await repo.create({ title: 'Same Name', tags: [], content: 'first' });
 
-    expect(note1.filePath).toMatch(/same-name\.md$/);
-    expect(note2.filePath).toMatch(/same-name-2\.md$/);
-
-    const raw1 = readFileSync(note1.filePath, 'utf-8');
-    const raw2 = readFileSync(note2.filePath, 'utf-8');
-    expect(raw1).toContain('first');
-    expect(raw2).toContain('second');
+    await expect(
+      repo.create({ title: 'Same Name', tags: [], content: 'second' }),
+    ).rejects.toThrow(SlugCollisionError);
   });
 
-  it('increments suffix for multiple collisions', async () => {
-    await repo.create({ title: 'Collide', tags: [], content: '1' });
-    await repo.create({ title: 'Collide', tags: [], content: '2' });
-    const note3 = await repo.create({ title: 'Collide', tags: [], content: '3' });
+  it('throws SlugCollisionError on case-insensitive collision', async () => {
+    await repo.create({ title: 'My Note', tags: [], content: 'first' });
 
-    expect(note3.filePath).toMatch(/collide-3\.md$/);
+    await expect(
+      repo.create({ title: 'my note', tags: [], content: 'second' }),
+    ).rejects.toThrow(SlugCollisionError);
   });
 
   // ─── Atomic writes ─────────────────────────────────────────────
@@ -173,7 +215,6 @@ describe('NoteRepository', () => {
       content: '# Atomic\n\nThis must be written atomically.',
     });
 
-    // Verify the file exists and is complete
     const raw = readFileSync(note.filePath, 'utf-8');
     expect(raw).toContain('title: Atomic Test');
     expect(raw).toContain('This must be written atomically.');

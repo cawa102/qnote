@@ -92,18 +92,19 @@ export class NoteService {
   resolveWikiLink(target: string): { filePath: string; title: string } | null {
     const normalizedTarget = target
       .normalize('NFC')
-      .replace(/[^\p{L}\p{N}\s-]/gu, '')
       .replace(/[\s]+/g, '-')
-      .toLowerCase()
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
 
     const allNotes = this.index.listRecent(10000);
 
-    // Strategy 1: Match by slug in file path
+    // Strategy 1: Match by filename (case-insensitive for macOS APFS compatibility)
     for (const hit of allNotes) {
       const fileName = hit.filePath.split('/').pop()?.replace('.md', '') ?? '';
-      if (fileName === normalizedTarget || fileName === target) {
+      if (
+        fileName.toLowerCase() === normalizedTarget.toLowerCase() ||
+        fileName.toLowerCase() === target.toLowerCase()
+      ) {
         return { filePath: hit.filePath, title: hit.title };
       }
     }

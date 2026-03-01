@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useSyncExternalStore } from 'react';
+import { join } from 'node:path';
 import { Box } from 'ink';
 import { createNavigationStore } from './hooks/use-navigation.js';
 import { createInputModeStore } from './hooks/use-input-mode.js';
@@ -106,7 +107,9 @@ function AppContent({
           break;
 
         case 'new': {
-          const title = 'untitled';
+          const now = new Date();
+          const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+          const title = `Untitled ${ts}`;
           noteService
             .create({
               title,
@@ -115,6 +118,9 @@ function AppContent({
             })
             .then((note) => {
               navStore.push('editor', { filePath: note.filePath });
+            })
+            .catch(() => {
+              // Collision or validation error — stay on palette
             });
           break;
         }
@@ -122,15 +128,27 @@ function AppContent({
         case 'daily': {
           const today = new Date();
           const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          const dailyFilename = `Daily-${dateStr}.md`;
+          const dailyPath = join(notesDir, 'daily', dailyFilename);
           noteService
-            .create({
-              title: `Daily: ${dateStr}`,
-              tags: ['daily'],
-              content: `# ${dateStr}\n\n## TODO\n\n- [ ] \n\n## Notes\n\n`,
-              directory: 'daily',
-            })
+            .read(dailyPath)
             .then((note) => {
               navStore.push('editor', { filePath: note.filePath });
+            })
+            .catch(() => {
+              noteService
+                .create({
+                  title: `Daily ${dateStr}`,
+                  tags: ['daily'],
+                  content: `# ${dateStr}\n\n## TODO\n\n- [ ] \n\n## Notes\n\n`,
+                  directory: 'daily',
+                })
+                .then((note) => {
+                  navStore.push('editor', { filePath: note.filePath });
+                })
+                .catch(() => {
+                  // Collision or validation error — stay on palette
+                });
             });
           break;
         }
