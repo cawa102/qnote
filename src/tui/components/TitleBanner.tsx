@@ -16,10 +16,11 @@ function PlainTitle(): React.ReactElement {
   );
 }
 
-function ArtTitle(): React.ReactElement {
+function ArtTitle({ contentWidth }: { readonly contentWidth: number }): React.ReactElement {
   const colored = colorizeTitle(TITLE_ART);
+  const padding = Math.max(0, Math.floor((contentWidth - TITLE_WIDTH) / 2));
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" paddingLeft={padding}>
       <Text>{colored}</Text>
     </Box>
   );
@@ -55,7 +56,7 @@ export function TitleBanner({ contentWidth, showTitleArt }: TitleBannerProps): R
 
   return (
     <TitleBannerErrorBoundary>
-      {canShowArt ? <ArtTitle /> : <PlainTitle />}
+      {canShowArt ? <ArtTitle contentWidth={contentWidth} /> : <PlainTitle />}
     </TitleBannerErrorBoundary>
   );
 }
