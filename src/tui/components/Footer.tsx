@@ -34,7 +34,8 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: 'Esc', desc: 'cancel' },
   ],
   capture: [
-    { key: '^S', desc: 'save' },
+    { key: 'Enter', desc: 'next' },
+    { key: 'Tab', desc: '$EDITOR' },
     { key: 'Esc', desc: 'cancel' },
   ],
   editor: [

@@ -108,12 +108,12 @@ export function createCommands(notesDir: string, configDir?: string) {
 
         await service.create({
           title: `capture-${timestamp}`,
-          tags: ['inbox'],
+          tags: ['quick'],
           content: text,
           directory: config.capture.directory,
         });
 
-        console.log('Captured to inbox.');
+        console.log('Captured to quick.');
       } finally {
         service.close();
       }

@@ -36,6 +36,8 @@ export function buildCaptureSlug(title: string): string {
   return slug.slice(0, MAX_SLUG_LENGTH);
 }
 
+type CapturePhase = 'title' | 'body';
+
 interface CaptureScreenProps {
   readonly noteService: NoteService;
   readonly nav: NavigationStore;
@@ -50,6 +52,8 @@ export function CaptureScreen({
   captureDir,
 }: CaptureScreenProps): React.ReactElement {
   const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [phase, setPhase] = useState<CapturePhase>('title');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { contentWidth } = useLayoutContext();
@@ -60,46 +64,45 @@ export function CaptureScreen({
     return () => inputMode.set('navigation');
   }, [inputMode]);
 
+  const saveNote = (content: string, openEditor: boolean): void => {
+    const noteTitle = title.trim() || buildCaptureSlug('');
+    const finalContent = openEditor ? `# ${noteTitle}\n\n${content}` : content;
+    noteService
+      .create({
+        title: noteTitle,
+        tags: ['quick'],
+        content: finalContent,
+        directory: captureDir,
+      })
+      .then((note) => {
+        if (openEditor) {
+          nav.pop();
+          nav.push('editor', { filePath: note.filePath });
+        } else {
+          setSaved(true);
+          setTimeout(() => nav.pop(), 600);
+        }
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+      });
+  };
+
   useInput((_input, key) => {
     if (saved) return;
 
-    // Enter: Create note with title-only frontmatter, empty body
     if (key.return) {
-      const noteTitle = title.trim() || buildCaptureSlug('');
-      noteService
-        .create({
-          title: noteTitle,
-          tags: ['inbox'],
-          content: '',
-          directory: captureDir,
-        })
-        .then(() => {
-          setSaved(true);
-          setTimeout(() => nav.pop(), 600);
-        })
-        .catch((err: Error) => {
-          setError(err.message);
-        });
+      if (phase === 'title') {
+        setPhase('body');
+      } else {
+        saveNote(body, false);
+      }
       return;
     }
 
-    // Tab: Create note, then open built-in editor
     if (key.tab) {
-      const noteTitle = title.trim() || buildCaptureSlug('');
-      noteService
-        .create({
-          title: noteTitle,
-          tags: ['inbox'],
-          content: `# ${noteTitle}\n\n`,
-          directory: captureDir,
-        })
-        .then((note) => {
-          nav.pop();
-          nav.push('editor', { filePath: note.filePath });
-        })
-        .catch((err: Error) => {
-          setError(err.message);
-        });
+      const content = phase === 'body' ? body : '';
+      saveNote(content, true);
     }
   });
 
@@ -116,11 +119,25 @@ export function CaptureScreen({
       <Text>  {theme.bold('Quick Capture')} {formatRuler(Math.max(0, contentWidth - 16))}</Text>
       <Box marginTop={1}>
         <Text>  Title: </Text>
-        <TextInput
-          placeholder="タイトルを入力..."
-          onChange={(value) => setTitle(value)}
-        />
+        {phase === 'title' ? (
+          <TextInput
+            placeholder="タイトルを入力..."
+            onChange={(value) => setTitle(value)}
+          />
+        ) : (
+          <Text>{title || theme.dim('(無題)')}</Text>
+        )}
       </Box>
+
+      {phase === 'body' && (
+        <Box marginTop={1}>
+          <Text>  Memo:  </Text>
+          <TextInput
+            placeholder="メモを入力... (空でもOK)"
+            onChange={(value) => setBody(value)}
+          />
+        </Box>
+      )}
 
       {error !== null && (
         <Box marginTop={1} paddingLeft={2}>
@@ -129,7 +146,11 @@ export function CaptureScreen({
       )}
 
       <Box marginTop={2}>
-        <Text dimColor>  Enter: 保存  Tab: エディタで編集  Esc: 戻る</Text>
+        <Text dimColor>
+          {phase === 'title'
+            ? '  Enter: 次へ  Tab: エディタで編集  Esc: 戻る'
+            : '  Enter: 保存  Tab: エディタで編集  Esc: 戻る'}
+        </Text>
       </Box>
     </Box>
   );

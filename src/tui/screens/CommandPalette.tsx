@@ -13,13 +13,13 @@ export interface PaletteCommand {
 }
 
 export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
-  { label: 'new note',  key: 'n', action: 'new' },
-  { label: 'find file', key: 'f', action: 'findFile' },
-  { label: 'search',    key: 's', action: 'search' },
-  { label: 'daily',     key: 'd', action: 'daily' },
-  { label: 'recent',    key: 'r', action: 'recent' },
-  { label: 'capture',   key: 'c', action: 'capture' },
-  { label: 'tags',      key: 't', action: 'tags' },
+  { label: 'New Note',  key: 'n', action: 'new' },
+  { label: 'Quick Note',   key: 'c', action: 'capture' },
+  { label: 'Daily Note',     key: 'd', action: 'daily' },
+  { label: 'Find File', key: 'f', action: 'findFile' },
+  { label: 'Search',    key: 's', action: 'search' },
+  { label: 'Recent',    key: 'r', action: 'recent' },
+  { label: 'Tags',      key: 't', action: 'tags' },
 ];
 
 interface CommandPaletteProps {

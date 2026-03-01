@@ -22,7 +22,7 @@ function resolveNotesDir(): string {
 
 // --- Fullscreen TUI launcher ---
 
-async function startTui(notesDir: string): Promise<void> {
+async function startTui(notesDir: string, captureDir: string): Promise<void> {
   // Signal handlers — safety net for abnormal termination
   // (fullscreen-ink handles normal alternate screen lifecycle)
   const handleSigInt = (): void => {
@@ -49,7 +49,7 @@ async function startTui(notesDir: string): Promise<void> {
     React.createElement(App, {
       noteService,
       searchIndex: noteService.getSearchIndex(),
-      captureDir: join(notesDir, 'inbox'),
+      captureDir,
       notesDir,
     }),
   );
@@ -73,9 +73,10 @@ program
 
 // Default action (no subcommand) → launch fullscreen TUI
 program.action(async () => {
-  const notesDir = resolveNotesDir();
+  const config = ConfigService.load(configDir);
+  const notesDir = ConfigService.resolveNotesDir(config.notesDir);
   ConfigService.ensureDirectories(notesDir);
-  await startTui(notesDir);
+  await startTui(notesDir, join(notesDir, config.capture.directory));
 });
 
 program
@@ -116,7 +117,7 @@ program
 
 program
   .command('capture <text>')
-  .description('Quick-capture text to inbox')
+  .description('Quick-capture text to quick notes')
   .action(async (text: string) => {
     const cmds = createCommands(resolveNotesDir(), configDir);
     await cmds.capture(text);

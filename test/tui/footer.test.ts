@@ -56,10 +56,13 @@ describe('getHintsForScreen', () => {
     expect(tabIndex).toBeLessThan(tIndex);
   });
 
-  it('capture hints contain ^S entry', () => {
+  it('capture hints contain Enter, Tab, Esc entries', () => {
     const hints = getHintsForScreen('capture');
     const keys = hints.map((h) => h.key);
-    expect(keys).toContain('^S');
+    expect(keys).toContain('Enter');
+    expect(keys).toContain('Tab');
+    expect(keys).toContain('Esc');
+    expect(keys).not.toContain('^S');
   });
 
   it('noteList hints contain ^Q quit entry', () => {

@@ -154,7 +154,7 @@ describe('createCommands', () => {
     expect(files.length).toBe(1);
   });
 
-  it('capture creates a note in inbox/ directory', async () => {
+  it('capture creates a note in quick/ directory', async () => {
     const { createCommands } = await import('../../src/cli/commands.js');
     const cmds = createCommands(tempDir, configDir);
 
@@ -162,8 +162,18 @@ describe('createCommands', () => {
     await cmds.capture('Quick thought to capture');
     logSpy.mockRestore();
 
-    const inboxDir = join(tempDir, 'inbox');
-    expect(existsSync(inboxDir)).toBe(true);
+    const quickDir = join(tempDir, 'quick');
+    expect(existsSync(quickDir)).toBe(true);
+  });
+
+  it('capture logs "Captured to quick." message', async () => {
+    const { createCommands } = await import('../../src/cli/commands.js');
+    const cmds = createCommands(tempDir, configDir);
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await cmds.capture('Test message');
+    expect(logSpy).toHaveBeenCalledWith('Captured to quick.');
+    logSpy.mockRestore();
   });
 
   it('tags lists all tags with counts', async () => {

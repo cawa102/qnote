@@ -21,7 +21,7 @@ describe('ConfigService', () => {
       expect(config.notesDir).toBe('~/notes');
       expect(config.daily.directory).toBe('daily');
       expect(config.daily.template).toBe('daily');
-      expect(config.capture.directory).toBe('inbox');
+      expect(config.capture.directory).toBe('quick');
       expect(config.search.excludeDirs).toEqual(['.git', 'node_modules', '.qnote']);
     });
 
