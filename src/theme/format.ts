@@ -24,7 +24,7 @@ export function formatIndicator(selected: boolean): string {
 }
 
 export function formatRuler(width: number): string {
-  return theme.bold('─'.repeat(width));
+  return theme.bold('━'.repeat(width));
 }
 
 export function formatDottedRuler(width: number): string {
@@ -33,18 +33,22 @@ export function formatDottedRuler(width: number): string {
 
 // --- Palette layout helpers ---
 
-export interface PaletteLayout {
-  readonly menuWidth: number;
+export interface PaletteGridLayout {
+  readonly columns: number;
+  readonly cellWidth: number;
+  readonly columnGap: number;
   readonly leftPad: number;
-  readonly showKeys: boolean;
   readonly rowGap: number;
   readonly separatorGap: number;
 }
 
-export function computePaletteLayout(contentWidth: number): PaletteLayout {
-  const menuWidth = Math.max(30, Math.min(contentWidth - 8, 48));
-  const leftPad = Math.max(0, Math.floor((contentWidth - menuWidth) / 2));
-  const showKeys = contentWidth >= 50;
-  return { menuWidth, leftPad, showKeys, rowGap: 1, separatorGap: 2 };
+export function computePaletteGridLayout(contentWidth: number): PaletteGridLayout {
+  const columns = contentWidth >= 60 ? 3 : contentWidth >= 40 ? 2 : 1;
+  const columnGap = columns > 1 ? 2 : 0;
+  const availableWidth = contentWidth - columnGap * (columns - 1);
+  const cellWidth = columns === 1 ? contentWidth : Math.floor(availableWidth / columns);
+  const totalGridWidth = columns * cellWidth + columnGap * (columns - 1);
+  const leftPad = Math.floor((contentWidth - totalGridWidth) / 2);
+  return { columns, cellWidth, columnGap, leftPad, rowGap: 1, separatorGap: 2 };
 }
 

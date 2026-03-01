@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from 'ink-testing-library';
 import { Box } from 'ink';
-import stringWidth from 'string-width';
 import { CommandPalette, PALETTE_COMMANDS } from '../../src/tui/screens/CommandPalette.js';
 import { createInputModeStore } from '../../src/tui/hooks/use-input-mode.js';
 import { LayoutProvider } from '../../src/tui/hooks/layout-context.js';
@@ -10,6 +9,8 @@ import { stripAnsi } from '../helpers/strip-ansi.js';
 
 const ARROW_DOWN = '\x1b[B';
 const ARROW_UP = '\x1b[A';
+const ARROW_RIGHT = '\x1b[C';
+const ARROW_LEFT = '\x1b[D';
 const ENTER = '\r';
 
 function delay(ms: number): Promise<void> {
@@ -59,13 +60,12 @@ describe('CommandPalette shortcut keys', () => {
     expect(actions).toEqual(['findFile']);
   });
 
-  it('all 7 shortcut keys fire correct actions', async () => {
+  it('all 6 shortcut keys fire correct actions (no recent)', async () => {
     const expected: [string, string][] = [
       ['n', 'new'],
       ['f', 'findFile'],
       ['s', 'search'],
       ['d', 'daily'],
-      ['r', 'recent'],
       ['c', 'capture'],
       ['t', 'tags'],
     ];
@@ -89,36 +89,42 @@ describe('CommandPalette shortcut keys', () => {
   });
 });
 
-describe('CommandPalette cursor navigation', () => {
-  it('arrow down moves selection', async () => {
-    const { stdin, lastFrame } = renderPalette();
-    await delay(50);
+describe('CommandPalette 2D grid navigation', () => {
+  // In 3-column mode (width=80), 6 commands in 3x2 grid:
+  // Row 0: [New Note(0), Quick Note(1), Daily Note(2)]
+  // Row 1: [Find File(3), Search(4),    Tags(5)]
 
-    stdin.write(ARROW_DOWN);
-    await delay(50);
-
-    const frame = lastFrame();
-    expect(frame).toMatch(/●\s+find file/);
-  });
-
-  it('arrow up from second item returns to first', async () => {
-    const { stdin, lastFrame } = renderPalette();
-    await delay(50);
-
-    stdin.write(ARROW_DOWN);
-    await delay(50);
-    stdin.write(ARROW_UP);
-    await delay(50);
-
-    const frame = lastFrame();
-    expect(frame).toMatch(/●\s+new note/);
-  });
-
-  it('Enter selects the current item', async () => {
+  it('arrow right moves selection from col 0 to col 1', async () => {
     const { stdin, actions } = renderPalette();
     await delay(50);
 
-    // Move to 'find file' (index 1) and press Enter
+    // Start at index 0 (New Note), move right to index 1 (Quick Note)
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['capture']);
+  });
+
+  it('arrow left at col 0 stays at col 0', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Start at index 0, arrow left should stay at 0
+    stdin.write(ARROW_LEFT);
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['new']);
+  });
+
+  it('arrow down moves from row 0 to row 1 (same column)', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Start at index 0 (New Note), arrow down → index 3 (Find File)
     stdin.write(ARROW_DOWN);
     await delay(50);
     stdin.write(ENTER);
@@ -127,15 +133,81 @@ describe('CommandPalette cursor navigation', () => {
     expect(actions).toEqual(['findFile']);
   });
 
-  it('arrow up at top stays at first item', async () => {
-    const { stdin, lastFrame } = renderPalette();
+  it('arrow up at row 0 stays at row 0', async () => {
+    const { stdin, actions } = renderPalette();
     await delay(50);
 
+    // Start at index 0, arrow up should stay at row 0
     stdin.write(ARROW_UP);
     await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
 
-    const frame = lastFrame();
-    expect(frame).toMatch(/●\s+new note/);
+    expect(actions).toEqual(['new']);
+  });
+
+  it('arrow right then down navigates to row 1 col 1', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Start at (0,0), right → (0,1), down → (1,1) = index 4 (Search)
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ARROW_DOWN);
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['search']);
+  });
+
+  it('arrow right at last column stays at last column', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Move to col 2 (right twice), then right again — should stay
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ARROW_RIGHT); // should not move past col 2
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['daily']);
+  });
+
+  it('arrow down at last row stays at last row', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Move to row 1, then down again — should stay
+    stdin.write(ARROW_DOWN);
+    await delay(50);
+    stdin.write(ARROW_DOWN); // should not move past row 1
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['findFile']);
+  });
+
+  it('Enter on grid position fires correct action', async () => {
+    const { stdin, actions } = renderPalette();
+    await delay(50);
+
+    // Navigate to last cell: (1,2) = Tags
+    stdin.write(ARROW_DOWN);
+    await delay(50);
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ARROW_RIGHT);
+    await delay(50);
+    stdin.write(ENTER);
+    await delay(50);
+
+    expect(actions).toEqual(['tags']);
   });
 
   it('sets input mode to navigation', async () => {
@@ -146,62 +218,50 @@ describe('CommandPalette cursor navigation', () => {
   });
 });
 
-describe('CommandPalette layout alignment', () => {
-  it('aligns all selection circles in the same column', async () => {
+describe('CommandPalette grid rendering', () => {
+  it('renders emoji icons for each command', async () => {
     const { lastFrame } = renderPalette();
     await delay(50);
 
-    const frame = lastFrame();
-    const lines = frame.split('\n');
-
-    const circleLines = lines
-      .map((line) => stripAnsi(line))
-      .filter((line) => line.includes('●') || line.includes('○'));
-
-    expect(circleLines.length).toBe(PALETTE_COMMANDS.length);
-
-    const circleColumns = circleLines.map((line) => {
-      const idxSelected = line.indexOf('●');
-      const idxUnselected = line.indexOf('○');
-      return idxSelected >= 0 ? idxSelected : idxUnselected;
-    });
-
-    const firstColumn = circleColumns[0]!;
-    for (const col of circleColumns) {
-      expect(col).toBe(firstColumn);
+    const frame = stripAnsi(lastFrame());
+    for (const cmd of PALETTE_COMMANDS) {
+      expect(frame).toContain(cmd.icon);
     }
   });
 
-  it('all rows have the same display width (right edge aligned)', async () => {
+  it('renders label with shortcut key in parentheses', async () => {
     const { lastFrame } = renderPalette();
     await delay(50);
 
-    const frame = lastFrame();
-    const lines = frame.split('\n');
-
-    const circleLines = lines
-      .map((line) => stripAnsi(line))
-      .filter((line) => line.includes('●') || line.includes('○'));
-
-    const widths = circleLines.map((line) => stringWidth(line.trimEnd()));
-    const firstWidth = widths[0]!;
-    for (const w of widths) {
-      expect(w).toBe(firstWidth);
+    const frame = stripAnsi(lastFrame());
+    for (const cmd of PALETTE_COMMANDS) {
+      expect(frame).toContain(`${cmd.label} (${cmd.key})`);
     }
   });
 
-  it('centers the options block within the content area', async () => {
+  it('does not render ● or ○ indicators', async () => {
     const { lastFrame } = renderPalette();
     await delay(50);
 
-    const frame = lastFrame();
-    const lines = frame.split('\n');
+    const frame = stripAnsi(lastFrame());
+    expect(frame).not.toContain('●');
+    expect(frame).not.toContain('○');
+  });
 
-    const circleLines = lines
-      .map((line) => stripAnsi(line))
-      .filter((line) => line.includes('●') || line.includes('○'));
+  it('renders bordered cells with bold (heavy) lines', async () => {
+    const { lastFrame } = renderPalette();
+    await delay(50);
 
-    const firstCircleCol = circleLines[0]!.indexOf('●');
-    expect(firstCircleCol).toBeGreaterThan(2);
+    const frame = stripAnsi(lastFrame());
+    // Bold border style uses ┏ ┓ ┗ ┛ corners and ━ ┃ lines
+    expect(frame).toContain('┏');
+    expect(frame).toContain('┓');
+    expect(frame).toContain('┗');
+    expect(frame).toContain('┛');
+    // Should NOT use round corners
+    expect(frame).not.toContain('╭');
+    expect(frame).not.toContain('╮');
+    expect(frame).not.toContain('╰');
+    expect(frame).not.toContain('╯');
   });
 });

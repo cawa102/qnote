@@ -3,20 +3,22 @@ import {
   PALETTE_COMMANDS,
 } from '../../src/tui/screens/CommandPalette.js';
 import {
-  computePaletteLayout,
+  computePaletteGridLayout,
 } from '../../src/theme/format.js';
 
 describe('PALETTE_COMMANDS', () => {
-  it('has 7 commands', () => {
-    expect(PALETTE_COMMANDS).toHaveLength(7);
+  it('has 6 commands (Recent removed)', () => {
+    expect(PALETTE_COMMANDS).toHaveLength(6);
   });
 
-  it('each command has label, key, and action', () => {
+  it('each command has label, key, action, and icon fields', () => {
     for (const cmd of PALETTE_COMMANDS) {
       expect(typeof cmd.label).toBe('string');
       expect(typeof cmd.key).toBe('string');
       expect(cmd.key).toHaveLength(1);
       expect(typeof cmd.action).toBe('string');
+      expect(typeof cmd.icon).toBe('string');
+      expect(cmd.icon.length).toBeGreaterThan(0);
     }
   });
 
@@ -24,58 +26,76 @@ describe('PALETTE_COMMANDS', () => {
     const keys = PALETTE_COMMANDS.map((c) => c.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it('no command has action "recent"', () => {
+    const actions = PALETTE_COMMANDS.map((c) => c.action);
+    expect(actions).not.toContain('recent');
+  });
 });
 
-describe('computePaletteLayout', () => {
-  it('contentWidth=80 → menuWidth=48, leftPad=16', () => {
-    const layout = computePaletteLayout(80);
-    expect(layout.menuWidth).toBe(48);
-    expect(layout.leftPad).toBe(16);
+describe('computePaletteGridLayout', () => {
+  it('width 80 → 3 columns', () => {
+    const layout = computePaletteGridLayout(80);
+    expect(layout.columns).toBe(3);
   });
 
-  it('contentWidth=60 → menuWidth=48, leftPad=6', () => {
-    const layout = computePaletteLayout(60);
-    expect(layout.menuWidth).toBe(48);
-    expect(layout.leftPad).toBe(6);
+  it('width 60 → 3 columns', () => {
+    const layout = computePaletteGridLayout(60);
+    expect(layout.columns).toBe(3);
   });
 
-  it('contentWidth=48 → menuWidth=40, leftPad=4', () => {
-    const layout = computePaletteLayout(48);
-    expect(layout.menuWidth).toBe(40);
-    expect(layout.leftPad).toBe(4);
+  it('width 50 → 2 columns', () => {
+    const layout = computePaletteGridLayout(50);
+    expect(layout.columns).toBe(2);
   });
 
-  it('contentWidth=30 → menuWidth=30 (min), leftPad=0 (non-negative)', () => {
-    const layout = computePaletteLayout(30);
-    expect(layout.menuWidth).toBe(30);
-    expect(layout.leftPad).toBe(0);
+  it('width 40 → 2 columns', () => {
+    const layout = computePaletteGridLayout(40);
+    expect(layout.columns).toBe(2);
   });
 
-  it('contentWidth=100 → menuWidth=48 (max clamp)', () => {
-    const layout = computePaletteLayout(100);
-    expect(layout.menuWidth).toBe(48);
+  it('width 35 → 1 column (vertical fallback)', () => {
+    const layout = computePaletteGridLayout(35);
+    expect(layout.columns).toBe(1);
   });
 
-  it('contentWidth >= 50 → showKeys=true', () => {
-    expect(computePaletteLayout(50).showKeys).toBe(true);
-    expect(computePaletteLayout(80).showKeys).toBe(true);
-    expect(computePaletteLayout(100).showKeys).toBe(true);
+  it('width 20 → 1 column', () => {
+    const layout = computePaletteGridLayout(20);
+    expect(layout.columns).toBe(1);
   });
 
-  it('contentWidth < 50 → showKeys=false', () => {
-    expect(computePaletteLayout(49).showKeys).toBe(false);
-    expect(computePaletteLayout(30).showKeys).toBe(false);
+  it('cellWidth accounts for columnGap in multi-column layouts', () => {
+    // 3 columns: available = 80 - 2*2 = 76, cellWidth = floor(76/3) = 25
+    const layout3 = computePaletteGridLayout(80);
+    expect(layout3.cellWidth).toBe(Math.floor((80 - 2 * 2) / 3));
+    expect(layout3.columnGap).toBe(2);
+
+    // 2 columns: available = 50 - 2*1 = 48, cellWidth = floor(48/2) = 24
+    const layout2 = computePaletteGridLayout(50);
+    expect(layout2.cellWidth).toBe(Math.floor((50 - 2 * 1) / 2));
+    expect(layout2.columnGap).toBe(2);
+  });
+
+  it('cellWidth equals contentWidth for 1 column (no gap)', () => {
+    const layout = computePaletteGridLayout(35);
+    expect(layout.cellWidth).toBe(35);
+    expect(layout.columnGap).toBe(0);
+  });
+
+  it('leftPad centers the grid including gaps', () => {
+    const layout = computePaletteGridLayout(80);
+    const totalGridWidth = layout.columns * layout.cellWidth + layout.columnGap * (layout.columns - 1);
+    const expectedLeftPad = Math.floor((80 - totalGridWidth) / 2);
+    expect(layout.leftPad).toBe(expectedLeftPad);
   });
 
   it('rowGap is always 1', () => {
-    expect(computePaletteLayout(30).rowGap).toBe(1);
-    expect(computePaletteLayout(80).rowGap).toBe(1);
-    expect(computePaletteLayout(100).rowGap).toBe(1);
+    expect(computePaletteGridLayout(30).rowGap).toBe(1);
+    expect(computePaletteGridLayout(80).rowGap).toBe(1);
   });
 
   it('separatorGap is always 2', () => {
-    expect(computePaletteLayout(30).separatorGap).toBe(2);
-    expect(computePaletteLayout(80).separatorGap).toBe(2);
-    expect(computePaletteLayout(100).separatorGap).toBe(2);
+    expect(computePaletteGridLayout(30).separatorGap).toBe(2);
+    expect(computePaletteGridLayout(80).separatorGap).toBe(2);
   });
 });

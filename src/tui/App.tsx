@@ -60,7 +60,7 @@ function AppContent({
   // State for screens that need loaded data
   const [previewNote, setPreviewNote] = useState<Note | null>(null);
   const [noteListItems, setNoteListItems] = useState<readonly NoteListItem[]>([]);
-  const [noteListTitle, setNoteListTitle] = useState('Recent');
+  const [noteListTitle, setNoteListTitle] = useState('');
 
   // Current note filePath for editor integration
   const currentFilePath =
@@ -79,21 +79,6 @@ function AppContent({
   const handleAction = useCallback(
     (action: string) => {
       switch (action) {
-        case 'recent': {
-          const items = noteService.listRecent(20);
-          const listItems: NoteListItem[] = items.map((hit) => ({
-            title: hit.title,
-            tags: hit.tags,
-            modified: hit.modified,
-            filePath: hit.filePath,
-            backlinkCount: 0,
-          }));
-          setNoteListItems(listItems);
-          setNoteListTitle('Recent');
-          navStore.push('noteList');
-          break;
-        }
-
         case 'findFile':
           navStore.push('findFile');
           break;

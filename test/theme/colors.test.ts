@@ -157,7 +157,7 @@ describe('formatIndicator', () => {
 describe('formatRuler', () => {
   it('returns a horizontal line of specified width', () => {
     const result = formatRuler(10);
-    expect(result).toContain('─'.repeat(10));
+    expect(result).toContain('━'.repeat(10));
   });
 
   it('returns empty ruler for zero width', () => {
