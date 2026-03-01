@@ -138,4 +138,5 @@ describe('formatRuler', () => {
     // The styled string may still have ANSI codes, but the ruler content is empty
     expect(result).toContain('');
   });
+
 });

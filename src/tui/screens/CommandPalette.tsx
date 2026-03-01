@@ -68,8 +68,8 @@ export function CommandPalette({ onAction, inputMode }: CommandPaletteProps): Re
   return (
     <Box flexDirection="column">
       <TitleBanner contentWidth={contentWidth} showTitleArt={showTitleArt} />
-      <Text>{formatRuler(contentWidth)}</Text>
-      <Box flexDirection="column" marginTop={1} paddingLeft={layout.leftPad} gap={layout.rowGap}>
+      <Text>{'      ' + formatRuler(contentWidth - 12)}</Text>
+      <Box flexDirection="column" marginTop={layout.separatorGap} paddingLeft={layout.leftPad} gap={layout.rowGap}>
         {PALETTE_COMMANDS.map((cmd, i) => {
           const isSelected = i === selectedIndex;
           return (

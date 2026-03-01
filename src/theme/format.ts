@@ -24,7 +24,7 @@ export function formatIndicator(selected: boolean): string {
 }
 
 export function formatRuler(width: number): string {
-  return theme.dim('─'.repeat(width));
+  return theme.bold('─'.repeat(width));
 }
 
 // --- Palette layout helpers ---
@@ -34,12 +34,13 @@ export interface PaletteLayout {
   readonly leftPad: number;
   readonly showKeys: boolean;
   readonly rowGap: number;
+  readonly separatorGap: number;
 }
 
 export function computePaletteLayout(contentWidth: number): PaletteLayout {
   const menuWidth = Math.max(30, Math.min(contentWidth - 8, 48));
   const leftPad = Math.max(0, Math.floor((contentWidth - menuWidth) / 2));
   const showKeys = contentWidth >= 50;
-  return { menuWidth, leftPad, showKeys, rowGap: 1 };
+  return { menuWidth, leftPad, showKeys, rowGap: 1, separatorGap: 2 };
 }
 

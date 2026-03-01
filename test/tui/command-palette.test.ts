@@ -72,4 +72,10 @@ describe('computePaletteLayout', () => {
     expect(computePaletteLayout(80).rowGap).toBe(1);
     expect(computePaletteLayout(100).rowGap).toBe(1);
   });
+
+  it('separatorGap is always 2', () => {
+    expect(computePaletteLayout(30).separatorGap).toBe(2);
+    expect(computePaletteLayout(80).separatorGap).toBe(2);
+    expect(computePaletteLayout(100).separatorGap).toBe(2);
+  });
 });
