@@ -1,4 +1,5 @@
 import { TextBuffer } from './text-buffer.js';
+import { getClipboard, setClipboard } from './clipboard.js';
 
 export interface KeyInfo {
   readonly ctrl: boolean;
@@ -52,22 +53,76 @@ export class TextEditorController {
   }
 
   private _dispatch(input: string, keyInfo: KeyInfo): TextBuffer {
-    const { ctrl, shift, name } = keyInfo;
+    const { ctrl, shift, meta, name } = keyInfo;
 
-    // Ctrl shortcuts
-    if (ctrl) {
-      if (shift && name === 'k') {
-        return this._buffer.checkpoint().deleteLine();
+    // 1. Meta(Option) + Shift + key — word selection, doc boundary selection
+    if (meta && shift && name) {
+      switch (name) {
+        case 'left':
+          return this._buffer.selectWordLeft();
+        case 'right':
+          return this._buffer.selectWordRight();
+        case 'up':
+          return this._buffer.selectToDocStart();
+        case 'down':
+          return this._buffer.selectToDocEnd();
+        default:
+          return this._buffer;
       }
+    }
+
+    // 2. Meta(Option) + key — word movement, doc boundary movement, clipboard, formatting
+    if (meta && name) {
+      switch (name) {
+        case 'left':
+          return this._buffer.moveWordLeft();
+        case 'right':
+          return this._buffer.moveWordRight();
+        case 'up':
+          return this._buffer.moveToDocStart();
+        case 'down':
+          return this._buffer.moveToDocEnd();
+        case 'a':
+          return this._buffer.selectAll();
+        case 'c':
+          return this._handleCopy();
+        case 'x':
+          return this._handleCut();
+        case 'v':
+          return this._handlePaste();
+        case 'b':
+          return this._buffer.checkpoint().wrapSelection('**', '**');
+        case 'i':
+          return this._buffer.checkpoint().wrapSelection('*', '*');
+        default:
+          return this._buffer;
+      }
+    }
+
+    // 3. Ctrl + Shift + key — delete line
+    if (ctrl && shift && name) {
+      switch (name) {
+        case 'k':
+          return this._buffer.checkpoint().deleteLine();
+        default:
+          return this._buffer;
+      }
+    }
+
+    // 4. Ctrl + key — undo/redo, bold/italic/link, selectAll
+    //    Note: Ctrl+C/X/V are NOT bound here. On macOS terminals, Ctrl+C sends
+    //    SIGINT (app exit) and never reaches Ink. Use Option+C/X/V instead.
+    //    Ctrl+I sends Tab and is indistinguishable from Tab key. Use Option+I.
+    if (ctrl && name) {
       switch (name) {
         case 'z':
           return this._buffer.undo();
         case 'y':
           return this._buffer.redo();
+        case 'a':
+          return this._buffer.selectAll();
         case 'b':
           return this._buffer.checkpoint().wrapSelection('**', '**');
-        case 'i':
-          return this._buffer.checkpoint().wrapSelection('*', '*');
         case 'd':
           return this._buffer.checkpoint().deleteForward();
         case 'k':
@@ -75,16 +130,34 @@ export class TextEditorController {
             this._buffer.getState().cursor,
             '[](url)',
           );
-        case 'left':
-          return this._buffer.moveWordLeft();
-        case 'right':
-          return this._buffer.moveWordRight();
         default:
           return this._buffer;
       }
     }
 
-    // Named keys
+    // 5. Shift + named key — selection movement
+    if (shift && name) {
+      switch (name) {
+        case 'left':
+          return this._buffer.selectLeft();
+        case 'right':
+          return this._buffer.selectRight();
+        case 'up':
+          return this._buffer.selectUp();
+        case 'down':
+          return this._buffer.selectDown();
+        case 'home':
+          return this._buffer.selectToLineStart();
+        case 'end':
+          return this._buffer.selectToLineEnd();
+        case 'tab':
+          return this._buffer.checkpoint().unindent();
+        default:
+          break; // fall through for other shift+key combos
+      }
+    }
+
+    // 6. Named key — movement + selection clear
     if (name) {
       switch (name) {
         case 'return':
@@ -92,14 +165,9 @@ export class TextEditorController {
         case 'backspace':
           return this._buffer.checkpoint().deleteBackward();
         case 'delete':
-          // Currently unreachable from EditorScreen (Ink maps macOS Backspace
-          // to key.delete, so getKeyName maps both to 'backspace').
-          // Kept for direct API use and future Linux/Windows support.
           return this._buffer.checkpoint().deleteForward();
         case 'tab':
-          return shift
-            ? this._buffer.checkpoint().unindent()
-            : this._buffer.checkpoint().indent();
+          return this._buffer.checkpoint().indent();
         case 'up':
           return this._buffer.moveCursor('up');
         case 'down':
@@ -117,12 +185,37 @@ export class TextEditorController {
       }
     }
 
-    // Plain character
+    // 7. Plain character — selection-aware insert
     if (input.length > 0) {
       return this._buffer.checkpoint().insertChar(input);
     }
 
     return this._buffer;
+  }
+
+  private _handleCopy(): TextBuffer {
+    const text = this._buffer.getSelectedText();
+    if (text) {
+      setClipboard(text);
+    }
+    return this._buffer;
+  }
+
+  private _handleCut(): TextBuffer {
+    const text = this._buffer.getSelectedText();
+    if (!text) {
+      return this._buffer;
+    }
+    setClipboard(text);
+    return this._buffer.checkpoint().deleteSelection();
+  }
+
+  private _handlePaste(): TextBuffer {
+    const text = getClipboard();
+    if (!text) {
+      return this._buffer;
+    }
+    return this._buffer.checkpoint().replaceSelection(text);
   }
 
   private _handleEnter(): TextBuffer {

@@ -45,6 +45,7 @@ const HINTS: Readonly<Record<ScreenName, readonly HintEntry[]>> = {
     { key: '^ shift →/←', desc: 'tab' },
     { key: '^T', desc: 'title' },
     { key: '^G', desc: 'tags' },
+    { key: '^/', desc: 'help' },
     { key: 'Esc', desc: 'back' },
   ],
   tagList: [

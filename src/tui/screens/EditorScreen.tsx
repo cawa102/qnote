@@ -12,6 +12,7 @@ import { BufferTabs } from '../components/BufferTabs.js';
 import { EditorHeaderBar } from '../components/EditorHeaderBar.js';
 import type { SaveStatus } from '../components/EditorHeaderBar.js';
 import { FileTree } from '../components/FileTree.js';
+import { HelpPanel, HELP_PANEL_HEIGHT } from '../components/HelpPanel.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
 import { theme } from '../../theme/colors.js';
 import { formatRuler } from '../../theme/format.js';
@@ -208,6 +209,7 @@ export function EditorScreen({
   const [showConfirm, setShowConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingCloseBufferId, setPendingCloseBufferId] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   // File tree state
   const [fileTreeRoot, setFileTreeRoot] = useState<FileTreeNode>({
@@ -281,7 +283,8 @@ export function EditorScreen({
   const headerHeight = 3; // title + tags + ruler
   const tabsHeight = 1;
   const footerHeight = 0; // footer is outside EditorScreen
-  const viewportHeight = Math.max(1, rows - headerHeight - tabsHeight - footerHeight - 2);
+  const helpHeight = showHelp ? HELP_PANEL_HEIGHT : 0;
+  const viewportHeight = Math.max(1, rows - headerHeight - tabsHeight - footerHeight - 2 - helpHeight);
 
   // Get active buffer state
   const active = bufferManager.getActive();
@@ -301,6 +304,7 @@ export function EditorScreen({
       viewportHeight,
       viewportWidth: editorWidth,
       scrollOffset,
+      selection: state.selection,
     });
     return result;
   }, [active, mode, viewportHeight, editorWidth, scrollOffset]);
@@ -457,6 +461,13 @@ export function EditorScreen({
       return;
     }
 
+    // Ctrl+/ — toggle keybinding help panel
+    // Ink doesn't set key.ctrl for \x1f (outside \x01-\x1a range), so check input directly
+    if (input === '\x1f') {
+      setShowHelp((prev) => !prev);
+      return;
+    }
+
     // Global keys (always handled by EditorScreen)
     if (key.ctrl) {
       // Ctrl+S — save
@@ -476,10 +487,14 @@ export function EditorScreen({
         setFocus(next.focus);
         return;
       }
-      // Ctrl+Right/Left — switch buffer
-      const arrowDir = handleCtrlArrow(key);
-      if (arrowDir) {
-        setBufferManager((prev) => arrowDir === 'next' ? prev.nextBuffer() : prev.prevBuffer());
+      // Ctrl+Shift+] / Ctrl+Shift+[ — switch buffer (remapped from Ctrl+Arrow)
+      if (input === '}') {
+        setBufferManager((prev) => prev.nextBuffer());
+        setScrollOffset(0);
+        return;
+      }
+      if (input === '{') {
+        setBufferManager((prev) => prev.prevBuffer());
         setScrollOffset(0);
         return;
       }
@@ -561,11 +576,18 @@ export function EditorScreen({
 
     // Dispatch to editor
     if (focus === 'editor' && active && mode === 'edit') {
+      const keyName = getKeyName(key);
+      // For modifier+letter combos (Ctrl+A, Option+C, etc.), Ink provides the
+      // letter as `input` but no boolean key property fires, so getKeyName
+      // returns undefined. Use input as the key name when a modifier is held.
+      const name = keyName ?? (
+        (key.ctrl || key.meta) && input.length === 1 ? input : undefined
+      );
       const keyInfo: KeyInfo = {
         ctrl: key.ctrl,
         shift: key.shift,
         meta: key.meta,
-        name: getKeyName(key),
+        name,
       };
       const newEditor = active.editor.handleInput(input, keyInfo);
       if (newEditor !== active.editor) {
@@ -669,6 +691,9 @@ export function EditorScreen({
             <Text dimColor>Select a file from the tree (Ctrl+E)</Text>
           )}
         </Box>
+
+        {/* Keybinding help panel (non-modal) */}
+        {showHelp && <HelpPanel width={editorWidth} />}
       </Box>
     </Box>
   );
@@ -682,6 +707,8 @@ function getKeyName(key: {
   backspace: boolean;
   delete: boolean;
   tab: boolean;
+  home: boolean;
+  end: boolean;
   upArrow: boolean;
   downArrow: boolean;
   leftArrow: boolean;
@@ -696,6 +723,8 @@ function getKeyName(key: {
   // Treat both as 'backspace' (deleteBackward). Use Ctrl+D for deleteForward.
   if (key.backspace || key.delete) return 'backspace';
   if (key.tab) return 'tab';
+  if (key.home) return 'home';
+  if (key.end) return 'end';
   if (key.upArrow) return 'up';
   if (key.downArrow) return 'down';
   if (key.leftArrow) return 'left';

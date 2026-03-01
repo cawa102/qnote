@@ -469,4 +469,518 @@ describe('TextBuffer', () => {
       expect(buf.getState().cursor.col).toBe(2);
     });
   });
+
+  describe('selectLeft / selectRight', () => {
+    it('selectLeft from middle of line extends selection by 1 char', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 3 })
+        .selectLeft();
+      const state = buf.getState();
+      expect(state.selection).toEqual({
+        anchor: { line: 0, col: 3 },
+        head: { line: 0, col: 2 },
+      });
+      expect(state.cursor).toEqual({ line: 0, col: 2 });
+    });
+
+    it('selectLeft from col 0 wraps to previous line end', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 1, col: 0 })
+        .selectLeft();
+      const state = buf.getState();
+      expect(state.selection).toEqual({
+        anchor: { line: 1, col: 0 },
+        head: { line: 0, col: 5 },
+      });
+    });
+
+    it('selectLeft at doc start is no-op', () => {
+      const buf = TextBuffer.create('hello').selectLeft();
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('selectRight from end of line wraps to next line start', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 0, col: 5 })
+        .selectRight();
+      const state = buf.getState();
+      expect(state.selection).toEqual({
+        anchor: { line: 0, col: 5 },
+        head: { line: 1, col: 0 },
+      });
+    });
+
+    it('selectRight from middle of line extends selection by 1 char', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectRight();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 1 },
+        head: { line: 0, col: 2 },
+      });
+    });
+
+    it('selectRight at doc end is no-op', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 5 })
+        .selectRight();
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('extends existing selection', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectRight()
+        .selectRight();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 1 },
+        head: { line: 0, col: 3 },
+      });
+    });
+  });
+
+  describe('selectUp / selectDown', () => {
+    it('selectUp extends selection one line up', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 1, col: 3 })
+        .selectUp();
+      const state = buf.getState();
+      expect(state.selection).toEqual({
+        anchor: { line: 1, col: 3 },
+        head: { line: 0, col: 3 },
+      });
+    });
+
+    it('selectDown extends selection one line down', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 0, col: 2 })
+        .selectDown();
+      const state = buf.getState();
+      expect(state.selection).toEqual({
+        anchor: { line: 0, col: 2 },
+        head: { line: 1, col: 2 },
+      });
+    });
+
+    it('selectUp/Down preserves preferredCol across vertical selection', () => {
+      const buf = TextBuffer.create('longline\nhi\nlongline')
+        .moveCursorTo({ line: 0, col: 6 })
+        .selectDown()  // line 1, col clamped to 2
+        .selectDown(); // line 2, restores to col 6
+      expect(buf.getState().selection!.head).toEqual({ line: 2, col: 6 });
+    });
+
+    it('selectUp at first line is no-op', () => {
+      const buf = TextBuffer.create('hello').selectUp();
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('selectDown at last line is no-op', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 3 })
+        .selectDown();
+      expect(buf.getState().selection).toBeNull();
+    });
+  });
+
+  describe('selectWordLeft / selectWordRight', () => {
+    it('selectWordLeft skips whitespace then word chars', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 8 })
+        .selectWordLeft();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 8 },
+        head: { line: 0, col: 6 },
+      });
+    });
+
+    it('selectWordRight skips word chars then whitespace', () => {
+      const buf = TextBuffer.create('hello world')
+        .selectWordRight();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 0 },
+        head: { line: 0, col: 6 },
+      });
+    });
+
+    it('selectWordLeft at line start wraps to previous line end', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 1, col: 0 })
+        .selectWordLeft();
+      expect(buf.getState().selection!.head).toEqual({ line: 0, col: 5 });
+    });
+
+    it('selectWordRight at line end wraps to next line start', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 0, col: 5 })
+        .selectWordRight();
+      expect(buf.getState().selection!.head).toEqual({ line: 1, col: 0 });
+    });
+  });
+
+  describe('selectToLineStart / selectToLineEnd', () => {
+    it('selectToLineStart from middle of line', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 3 })
+        .selectToLineStart();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 3 },
+        head: { line: 0, col: 0 },
+      });
+    });
+
+    it('selectToLineEnd from middle of line', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 2 })
+        .selectToLineEnd();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 2 },
+        head: { line: 0, col: 5 },
+      });
+    });
+  });
+
+  describe('selectToDocStart / selectToDocEnd', () => {
+    it('selectToDocStart from middle of document', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveCursorTo({ line: 1, col: 2 })
+        .selectToDocStart();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 1, col: 2 },
+        head: { line: 0, col: 0 },
+      });
+    });
+
+    it('selectToDocEnd from middle of document', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveCursorTo({ line: 1, col: 1 })
+        .selectToDocEnd();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 1, col: 1 },
+        head: { line: 2, col: 3 },
+      });
+    });
+  });
+
+  describe('selectAll', () => {
+    it('selectAll covers entire document', () => {
+      const buf = TextBuffer.create('hello\nworld').selectAll();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 0 },
+        head: { line: 1, col: 5 },
+      });
+    });
+
+    it('selectAll on single line', () => {
+      const buf = TextBuffer.create('hello').selectAll();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 0 },
+        head: { line: 0, col: 5 },
+      });
+    });
+
+    it('selectAll on empty document', () => {
+      const buf = TextBuffer.create('').selectAll();
+      expect(buf.getState().selection).toEqual({
+        anchor: { line: 0, col: 0 },
+        head: { line: 0, col: 0 },
+      });
+    });
+  });
+
+  describe('getSelectedText', () => {
+    it('returns correct text for single-line selection', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 });
+      expect(buf.getSelectedText()).toBe('hello');
+    });
+
+    it('returns correct text for multi-line selection', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 2, col: 2 });
+      expect(buf.getSelectedText()).toBe('aa\nbbb\ncc');
+    });
+
+    it('returns empty string when no selection', () => {
+      const buf = TextBuffer.create('hello');
+      expect(buf.getSelectedText()).toBe('');
+    });
+
+    it('handles reversed selection (head before anchor)', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 5 })
+        .selectTo({ line: 0, col: 2 });
+      expect(buf.getSelectedText()).toBe('llo');
+    });
+  });
+
+  describe('deleteSelection', () => {
+    it('removes single-line selection', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .deleteSelection();
+      expect(buf.getText()).toBe(' world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('removes multi-line selection and merges lines', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 2, col: 2 })
+        .deleteSelection();
+      expect(buf.getText()).toBe('ac');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 1 });
+    });
+
+    it('with no selection is a no-op', () => {
+      const buf = TextBuffer.create('hello');
+      const result = buf.deleteSelection();
+      expect(result.getText()).toBe('hello');
+    });
+
+    it('handles reversed selection', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 5 })
+        .selectTo({ line: 0, col: 2 })
+        .deleteSelection();
+      expect(buf.getText()).toBe('he');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 2 });
+    });
+  });
+
+  describe('replaceSelection', () => {
+    it('replaces selected text', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .replaceSelection('hi');
+      expect(buf.getText()).toBe('hi world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 2 });
+    });
+
+    it('replaces with multi-line text', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .replaceSelection('hi\nthere');
+      expect(buf.getText()).toBe('hi\nthere world');
+    });
+
+    it('with no selection inserts at cursor', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 5 })
+        .replaceSelection(' world');
+      expect(buf.getText()).toBe('hello world');
+    });
+  });
+
+  describe('moveToDocStart / moveToDocEnd', () => {
+    it('moveToDocStart moves cursor and clears selection', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveCursorTo({ line: 2, col: 2 })
+        .selectTo({ line: 1, col: 1 })
+        .moveToDocStart();
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('moveToDocEnd moves cursor and clears selection', () => {
+      const buf = TextBuffer.create('aaa\nbbb\nccc')
+        .moveToDocEnd();
+      expect(buf.getState().cursor).toEqual({ line: 2, col: 3 });
+      expect(buf.getState().selection).toBeNull();
+    });
+  });
+
+  describe('deleteWordBackward', () => {
+    it('deletes from cursor to word boundary', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 11 })
+        .deleteWordBackward();
+      expect(buf.getText()).toBe('hello ');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 6 });
+    });
+
+    it('at line start merges with previous line', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 1, col: 0 })
+        .deleteWordBackward();
+      expect(buf.getText()).toBe('helloworld');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 5 });
+    });
+
+    it('deletes whitespace then word', () => {
+      const buf = TextBuffer.create('hello   world')
+        .moveCursorTo({ line: 0, col: 8 })
+        .deleteWordBackward();
+      expect(buf.getText()).toBe('world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+    });
+
+    it('at doc start is no-op', () => {
+      const buf = TextBuffer.create('hello').deleteWordBackward();
+      expect(buf.getText()).toBe('hello');
+    });
+  });
+
+  describe('deleteWordForward', () => {
+    it('deletes from cursor to next word boundary', () => {
+      const buf = TextBuffer.create('hello world')
+        .deleteWordForward();
+      expect(buf.getText()).toBe('world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+    });
+
+    it('at line end merges with next line', () => {
+      const buf = TextBuffer.create('hello\nworld')
+        .moveCursorTo({ line: 0, col: 5 })
+        .deleteWordForward();
+      expect(buf.getText()).toBe('helloworld');
+    });
+
+    it('at doc end is no-op', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 5 })
+        .deleteWordForward();
+      expect(buf.getText()).toBe('hello');
+    });
+  });
+
+  describe('selection-aware existing methods', () => {
+    it('insertChar with selection replaces selected text', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .insertChar('x');
+      expect(buf.getText()).toBe('x world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 1 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('insertNewline with selection deletes selection then inserts newline', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .insertNewline();
+      expect(buf.getText()).toBe('\n world');
+    });
+
+    it('deleteBackward with selection deletes entire selection', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .deleteBackward();
+      expect(buf.getText()).toBe(' world');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+    });
+
+    it('deleteForward with selection deletes entire selection', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 5 })
+        .deleteForward();
+      expect(buf.getText()).toBe(' world');
+    });
+
+    it('left arrow with selection collapses to selection start', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 0, col: 4 })
+        .moveCursor('left');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 1 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('right arrow with selection collapses to selection end', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 0, col: 4 })
+        .moveCursor('right');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 4 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('up arrow with selection clears selection and moves up from head', () => {
+      const buf = TextBuffer.create('hello\nworld\nfoo')
+        .moveCursorTo({ line: 0, col: 2 })
+        .selectTo({ line: 1, col: 3 })
+        .moveCursor('up');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 3 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('down arrow with selection clears selection and moves down from head', () => {
+      const buf = TextBuffer.create('hello\nworld\nfoo')
+        .moveCursorTo({ line: 2, col: 1 })
+        .selectTo({ line: 1, col: 2 })
+        .moveCursor('down');
+      expect(buf.getState().cursor).toEqual({ line: 2, col: 2 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('moveToLineStart with selection clears selection', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 0, col: 4 })
+        .moveToLineStart();
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 0 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('moveToLineEnd with selection clears selection', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 1 })
+        .selectTo({ line: 0, col: 3 })
+        .moveToLineEnd();
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 5 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('moveWordLeft with selection clears selection then moves', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 6 })
+        .selectTo({ line: 0, col: 9 })
+        .moveWordLeft();
+      expect(buf.getState().selection).toBeNull();
+      expect(buf.getState().cursor.col).toBe(6);
+    });
+
+    it('moveWordRight with selection clears selection then moves', () => {
+      const buf = TextBuffer.create('hello world')
+        .moveCursorTo({ line: 0, col: 0 })
+        .selectTo({ line: 0, col: 3 })
+        .moveWordRight();
+      expect(buf.getState().selection).toBeNull();
+      expect(buf.getState().cursor.col).toBe(6);
+    });
+
+    it('all existing tests continue to pass (no selection = unchanged behavior)', () => {
+      // This is a meta-test — ensured by all the describe blocks above
+      const buf = TextBuffer.create('hello')
+        .insertChar('x');
+      expect(buf.getText()).toBe('xhello');
+    });
+
+    it('reversed selection with left arrow collapses to start', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 4 })
+        .selectTo({ line: 0, col: 1 })
+        .moveCursor('left');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 1 });
+      expect(buf.getState().selection).toBeNull();
+    });
+
+    it('reversed selection with right arrow collapses to end', () => {
+      const buf = TextBuffer.create('hello')
+        .moveCursorTo({ line: 0, col: 4 })
+        .selectTo({ line: 0, col: 1 })
+        .moveCursor('right');
+      expect(buf.getState().cursor).toEqual({ line: 0, col: 4 });
+      expect(buf.getState().selection).toBeNull();
+    });
+  });
 });

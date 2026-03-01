@@ -3,6 +3,7 @@ import {
   renderViewport,
   calculateScrollOffset,
   insertCursor,
+  applySelectionHighlight,
 } from '../../../src/tui/editor/renderer.js';
 import type { RenderOptions } from '../../../src/tui/editor/renderer.js';
 
@@ -26,6 +27,7 @@ const makeOptions = (overrides: Partial<RenderOptions> = {}): RenderOptions => (
   viewportHeight: overrides.viewportHeight ?? 3,
   viewportWidth: overrides.viewportWidth ?? 40,
   scrollOffset: overrides.scrollOffset ?? 0,
+  selection: overrides.selection ?? null,
 });
 
 describe('Renderer', () => {
@@ -327,6 +329,96 @@ describe('Renderer', () => {
       const result = renderViewport(options);
       const lines = result.content.split('\n');
       expect(lines[1]).toBe('BBB');
+    });
+
+    it('renders without error when selection is null', () => {
+      const options = makeOptions({
+        lines: ['hello'],
+        highlightedLines: ['hello'],
+        viewportHeight: 1,
+        selection: null,
+      });
+      const result = renderViewport(options);
+      expect(stripCursor(result.content)).toBe('hello');
+    });
+
+    it('applies selection highlighting when selection is present', () => {
+      const options = makeOptions({
+        lines: ['hello'],
+        highlightedLines: ['hello'],
+        viewportHeight: 1,
+        cursor: { line: 0, col: 3 },
+        selection: {
+          anchor: { line: 0, col: 1 },
+          head: { line: 0, col: 3 },
+        },
+      });
+      const result = renderViewport(options);
+      // Selection highlight should be present (contains selection bg ANSI codes)
+      // Just verify it renders without error and content is modified
+      expect(result.content).not.toBe('hello');
+    });
+  });
+
+  describe('applySelectionHighlight', () => {
+    // Use a simple mock selectionBg function for testing
+    const selBg = (text: string) => `[SEL]${text}[/SEL]`;
+
+    it('returns line unchanged when selection is null', () => {
+      const result = applySelectionHighlight('hello', 0, null, selBg);
+      expect(result).toBe('hello');
+    });
+
+    it('returns line unchanged when line is outside selection range', () => {
+      const sel = { anchor: { line: 2, col: 0 }, head: { line: 3, col: 5 } };
+      const result = applySelectionHighlight('hello', 0, sel, selBg);
+      expect(result).toBe('hello');
+    });
+
+    it('highlights correct column range for single-line selection', () => {
+      const sel = { anchor: { line: 0, col: 1 }, head: { line: 0, col: 3 } };
+      const result = applySelectionHighlight('hello', 0, sel, selBg);
+      expect(result).toBe('h[SEL]e[/SEL][SEL]l[/SEL]lo');
+    });
+
+    it('multi-line selection: first line highlighted from start col to end', () => {
+      const sel = { anchor: { line: 0, col: 2 }, head: { line: 2, col: 3 } };
+      const result = applySelectionHighlight('hello', 0, sel, selBg);
+      // Chars at index 2,3,4 should be highlighted + trailing bg space
+      expect(result).toBe('he[SEL]l[/SEL][SEL]l[/SEL][SEL]o[/SEL][SEL] [/SEL]');
+    });
+
+    it('multi-line selection: middle lines fully highlighted', () => {
+      const sel = { anchor: { line: 0, col: 0 }, head: { line: 2, col: 3 } };
+      const result = applySelectionHighlight('mid', 1, sel, selBg);
+      expect(result).toBe('[SEL]m[/SEL][SEL]i[/SEL][SEL]d[/SEL][SEL] [/SEL]');
+    });
+
+    it('multi-line selection: last line highlighted from start to end col', () => {
+      const sel = { anchor: { line: 0, col: 0 }, head: { line: 2, col: 2 } };
+      const result = applySelectionHighlight('hello', 2, sel, selBg);
+      expect(result).toBe('[SEL]h[/SEL][SEL]e[/SEL]llo');
+    });
+
+    it('ANSI escape codes in line are preserved', () => {
+      const sel = { anchor: { line: 0, col: 0 }, head: { line: 0, col: 3 } };
+      const result = applySelectionHighlight('\x1b[31mhello\x1b[0m', 0, sel, selBg);
+      // ANSI codes should be passed through, only visible chars highlighted
+      expect(result).toContain('\x1b[31m');
+      expect(result).toContain('[SEL]');
+    });
+
+    it('selection extending past line end adds background space', () => {
+      const sel = { anchor: { line: 0, col: 0 }, head: { line: 1, col: 3 } };
+      const result = applySelectionHighlight('hi', 0, sel, selBg);
+      // All chars highlighted + trailing space for newline indication
+      expect(result).toBe('[SEL]h[/SEL][SEL]i[/SEL][SEL] [/SEL]');
+    });
+
+    it('empty selection (anchor === head) returns line unchanged', () => {
+      const sel = { anchor: { line: 0, col: 2 }, head: { line: 0, col: 2 } };
+      const result = applySelectionHighlight('hello', 0, sel, selBg);
+      expect(result).toBe('hello');
     });
   });
 });

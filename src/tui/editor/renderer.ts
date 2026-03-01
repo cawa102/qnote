@@ -1,5 +1,5 @@
 import stringWidth from 'string-width';
-import type { CursorPosition } from './types.js';
+import type { CursorPosition, Selection } from './types.js';
 
 const SCROLL_MARGIN = 3;
 
@@ -17,6 +17,7 @@ export interface RenderOptions {
   readonly viewportHeight: number;
   readonly viewportWidth: number;
   readonly scrollOffset: number;
+  readonly selection?: Selection | null;
 }
 
 export interface RenderedOutput {
@@ -157,11 +158,108 @@ export function insertCursor(highlightedLine: string, col: number): string {
 }
 
 /**
+ * Apply selection highlight background to a line.
+ * Walks ANSI codes by skipping escape sequences and wrapping visible
+ * characters within the selection range with selectionBg().
+ */
+export function applySelectionHighlight(
+  highlightedLine: string,
+  lineIndex: number,
+  selection: Selection | null,
+  selectionBg: (text: string) => string,
+): string {
+  if (!selection) {
+    return highlightedLine;
+  }
+
+  const [start, end] = normalizeSelectionPos(selection.anchor, selection.head);
+
+  // Empty selection
+  if (start.line === end.line && start.col === end.col) {
+    return highlightedLine;
+  }
+
+  // Line completely outside selection range
+  if (lineIndex < start.line || lineIndex > end.line) {
+    return highlightedLine;
+  }
+
+  // Determine which columns to highlight on this line
+  let selStart: number;
+  let selEnd: number; // exclusive
+  let trailingBg = false;
+
+  if (start.line === end.line && lineIndex === start.line) {
+    // Single-line selection
+    selStart = start.col;
+    selEnd = end.col;
+  } else if (lineIndex === start.line) {
+    // First line of multi-line selection
+    selStart = start.col;
+    selEnd = Infinity;
+    trailingBg = true;
+  } else if (lineIndex === end.line) {
+    // Last line of multi-line selection
+    selStart = 0;
+    selEnd = end.col;
+  } else {
+    // Middle line — fully selected
+    selStart = 0;
+    selEnd = Infinity;
+    trailingBg = true;
+  }
+
+  let visibleIndex = 0;
+  let i = 0;
+  let result = '';
+
+  while (i < highlightedLine.length) {
+    const ansiMatch = highlightedLine.slice(i).match(/^\x1b\[[0-9;]*m/);
+    if (ansiMatch) {
+      result += ansiMatch[0];
+      i += ansiMatch[0].length;
+      continue;
+    }
+
+    const cp = highlightedLine.codePointAt(i)!;
+    const char = String.fromCodePoint(cp);
+
+    if (visibleIndex >= selStart && visibleIndex < selEnd) {
+      result += selectionBg(char);
+    } else {
+      result += char;
+    }
+    i += char.length;
+    visibleIndex++;
+  }
+
+  // Trailing background space for multi-line selection newline indication
+  if (trailingBg || (lineIndex < end.line && lineIndex >= start.line && lineIndex !== end.line)) {
+    result += selectionBg(' ');
+  }
+
+  return result;
+}
+
+function normalizeSelectionPos(
+  anchor: CursorPosition,
+  head: CursorPosition,
+): [CursorPosition, CursorPosition] {
+  if (
+    anchor.line < head.line ||
+    (anchor.line === head.line && anchor.col <= head.col)
+  ) {
+    return [anchor, head];
+  }
+  return [head, anchor];
+}
+
+/**
  * Render the text editor viewport as a string.
  * Handles scroll offset, line truncation, cursor display, and viewport padding.
  */
 export function renderViewport(options: RenderOptions): RenderedOutput {
-  const { highlightedLines, cursor, viewportHeight, viewportWidth } = options;
+  const { highlightedLines, cursor, viewportHeight, viewportWidth, selection } = options;
 
   // Calculate the updated scroll offset
   const scrollOffset = calculateScrollOffset(cursor, options.scrollOffset, viewportHeight);
@@ -171,7 +269,12 @@ export function renderViewport(options: RenderOptions): RenderedOutput {
   for (let i = 0; i < viewportHeight; i++) {
     const lineIndex = scrollOffset + i;
     if (lineIndex < highlightedLines.length) {
-      let line = truncateToWidth(highlightedLines[lineIndex], viewportWidth);
+      let line = highlightedLines[lineIndex]!;
+      // Apply selection highlighting before cursor and truncation
+      if (selection) {
+        line = applySelectionHighlight(line, lineIndex, selection, (t) => `\x1b[48;2;38;79;120m${t}\x1b[49m`);
+      }
+      line = truncateToWidth(line, viewportWidth);
       if (lineIndex === cursor.line) {
         line = insertCursor(line, cursor.col);
       }
