@@ -1,7 +1,4 @@
-# qnote
-
-AI-friendly terminal-native note-taking app. Your notes are plain Markdown files — always accessible, never locked in.
-
+# Queen Note
 ```
  ██████╗ ██╗   ██╗███████╗███████╗███╗   ██╗     ███╗   ██╗ ██████╗ ████████╗███████╗
 ██╔═══██╗██║   ██║██╔════╝██╔════╝████╗  ██║     ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
@@ -11,15 +8,15 @@ AI-friendly terminal-native note-taking app. Your notes are plain Markdown files
  ╚══▀▀═╝  ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═══╝     ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝
 ```
 
+AI-friendly terminal-native note-taking app working fully localy. Your notes are plain Markdown files — always accessible, never locked in.
+
 ## Features
 
 - **Plain Markdown** — Each note is a standalone `.md` file with YAML frontmatter. No proprietary format.
-- **Full-text search** — SQLite FTS5 with trigram tokenizer. Full CJK (Japanese, Chinese, Korean) support.
+- **Full-text search** — SQLite FTS5 with trigram tokenizer. Full CJK (Chinese, Japanese, Korean) support.
 - **Bidirectional links** — `[[wikilinks]]` with automatic backlink detection.
-- **Beautiful TUI** — Fullscreen terminal UI built with Ink + React. Command palette, Markdown preview, tag browser.
-- **AI-friendly** — Claude Code and other AI tools can directly read/grep/glob your notes. MCP server planned.
+- **AI-friendly** — Claude Code and other AI tools can directly read/grep/glob your notes. MCP server supported.
 - **Local-first** — All data stays on your machine. No account, no cloud, no vendor lock-in.
-- **CJK-aware** — Japanese/Chinese/Korean characters preserved in filenames and fully searchable.
 
 ## Installation
 
@@ -49,30 +46,20 @@ Run `qnote` with no arguments to launch the fullscreen terminal UI.
 
 **Screens:**
 
-| Screen | Purpose | How to reach |
-|--------|---------|-------------|
-| Command Palette | Home screen, fuzzy search for any action | Launch / press `:` from anywhere |
-| Note List | Browse and filter notes | Select from palette |
-| Note Preview | Read notes with rendered Markdown | Press `Enter` on a note |
-| Search | Incremental full-text search (150ms debounce) | Press `/` from anywhere |
-| Capture | Quick memo — single-line title input | Press `c` from anywhere |
-| Tag Browser | Browse all tags with fuzzy search and rename | Select from palette |
-| Editor | Built-in text editor with syntax highlighting | Press `e` on a note |
+| Screen | Purpose |
+|--------|---------|
+| Command Palette | Home screen, fuzzy search for any action |
+| Note List | Browse and filter notes |
+| Note Preview | Read notes with rendered Markdown |
+| Search | Incremental full-text search (150ms debounce) |
+| Capture | Quick memo — single-line title input |
+| Tag Browser | Browse all tags with fuzzy search and rename |
+| Editor | Built-in text editor with syntax highlighting |
 
 **Keyboard shortcuts:**
 
-| Key | Action |
-|-----|--------|
-| `:` | Open command palette |
-| `/` | Search |
-| `c` | Quick capture |
-| `e` | Edit note |
-| `p` | Toggle raw / rendered Markdown |
-| `j/k` or `↑/↓` | Navigate lists |
-| `Enter` | Select / confirm |
-| `Esc` | Go back |
-| `1-9` | Jump to `[[wikilink]]` (Vimium-style) |
-| `q` | Quit |
+Keyboard shortcuts are always available on footer.
+When you edit notes (editor screen), 'Ctrl+/' shows standard keybindings. It's not Vim-ish complex keybinds, no need to spend too much time just to write notes.
 
 ### CLI Mode
 
