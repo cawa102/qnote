@@ -58,6 +58,25 @@ describe('ConfigService', () => {
       expect(config1).not.toBe(config2);
       expect(config1).toEqual(config2);
     });
+
+    it('returns defaults when config file contains malformed JSON', () => {
+      const configDir = join(tempHome, '.qnote');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(join(configDir, 'config.json'), '{invalid json!!!');
+
+      const config = ConfigService.load(configDir);
+      expect(config.notesDir).toBe('~/notes');
+      expect(config.daily.directory).toBe('daily');
+    });
+
+    it('returns defaults when config file is empty string', () => {
+      const configDir = join(tempHome, '.qnote');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(join(configDir, 'config.json'), '');
+
+      const config = ConfigService.load(configDir);
+      expect(config.notesDir).toBe('~/notes');
+    });
   });
 
   describe('save', () => {
@@ -94,6 +113,17 @@ describe('ConfigService', () => {
       const raw = readFileSync(join(configDir, 'config.json'), 'utf-8');
       const parsed = JSON.parse(raw);
       expect(parsed.notesDir).toBe('/test');
+    });
+
+    it('overwrites malformed config on save', () => {
+      const configDir = join(tempHome, '.qnote');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(join(configDir, 'config.json'), 'not-valid-json');
+
+      ConfigService.save(configDir, { notesDir: '/fixed' });
+
+      const config = ConfigService.load(configDir);
+      expect(config.notesDir).toBe('/fixed');
     });
   });
 
