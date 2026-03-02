@@ -1,7 +1,8 @@
 import { readFile, writeFile, unlink, readdir, mkdir, rename } from 'node:fs/promises';
-import { join, extname, dirname } from 'node:path';
+import { join, extname, dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { parseFrontmatter, serializeFrontmatter } from './frontmatter.js';
+import { assertPathWithinRoot } from './path-utils.js';
 import type { Note, NoteMeta } from '../types.js';
 import {
   NoteNotFoundError,
@@ -40,6 +41,7 @@ export class NoteRepository {
       ? join(this.notesDir, input.directory)
       : this.notesDir;
 
+    await assertPathWithinRoot(resolve(dir), this.notesDir);
     await mkdir(dir, { recursive: true });
 
     const filePath = await this.checkCollision(dir, filename);
@@ -57,6 +59,7 @@ export class NoteRepository {
   }
 
   async read(filePath: string): Promise<Note> {
+    await assertPathWithinRoot(filePath, this.notesDir);
     let raw: string;
     try {
       raw = await readFile(filePath, 'utf-8');
@@ -108,6 +111,7 @@ export class NoteRepository {
   }
 
   async delete(filePath: string): Promise<void> {
+    await assertPathWithinRoot(filePath, this.notesDir);
     await unlink(filePath);
   }
 

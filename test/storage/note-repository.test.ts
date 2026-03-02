@@ -8,6 +8,7 @@ import {
   InvalidTitleError,
   TitleTooLongError,
   SlugCollisionError,
+  PathTraversalError,
 } from '../../src/types.js';
 
 describe('NoteRepository', () => {
@@ -53,8 +54,8 @@ describe('NoteRepository', () => {
     expect(note.content).toContain('Hello world.');
   });
 
-  it('throws NoteNotFoundError when reading non-existent file', async () => {
-    await expect(repo.read('/nonexistent/path.md')).rejects.toThrow(NoteNotFoundError);
+  it('throws NoteNotFoundError when reading non-existent file within notesDir', async () => {
+    await expect(repo.read(join(tempDir, 'nonexistent.md'))).rejects.toThrow(NoteNotFoundError);
   });
 
   it('lists all markdown files', async () => {
@@ -261,5 +262,31 @@ describe('NoteRepository', () => {
     expect(note.filePath).toContain('daily/2026-02/');
     const raw = readFileSync(note.filePath, 'utf-8');
     expect(raw).toContain('journal');
+  });
+
+  // ─── Path confinement ────────────────────────────────────────────
+
+  it('throws PathTraversalError when create escapes notesDir', async () => {
+    await expect(
+      repo.create({ title: 'Evil', tags: [], content: 'x', directory: '../../tmp' }),
+    ).rejects.toThrow(PathTraversalError);
+  });
+
+  it('throws PathTraversalError when reading outside notesDir', async () => {
+    await expect(repo.read('/etc/hosts')).rejects.toThrow(PathTraversalError);
+  });
+
+  it('throws PathTraversalError when deleting outside notesDir', async () => {
+    await expect(repo.delete('/etc/hosts')).rejects.toThrow(PathTraversalError);
+  });
+
+  it('allows create in valid subdirectory', async () => {
+    const note = await repo.create({
+      title: 'Deep Note',
+      tags: [],
+      content: 'deep',
+      directory: 'sub/deep',
+    });
+    expect(note.filePath).toContain('sub/deep/');
   });
 });

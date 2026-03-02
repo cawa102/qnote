@@ -16,11 +16,38 @@ export function isWithinRoot(resolvedPath: string, resolvedRoot: string): boolea
 /**
  * Resolve a file path and assert it is within the given root directory.
  * Throws PathTraversalError if the path escapes the root.
- * Uses realpath on both paths to handle symlinks (e.g. macOS /var → /private/var).
+ *
+ * Uses resolve() to normalize both paths (handling .. components).
+ * For symlink protection, file-scanner and file-tree-builder use
+ * isWithinRoot + realpath directly at scan time.
  */
 export async function assertPathWithinRoot(filePath: string, rootDir: string): Promise<void> {
-  const resolvedPath = await realpath(resolve(filePath));
-  const resolvedRoot = await realpath(rootDir);
+  // Resolve both to canonicalize .. components. Try realpath for existing
+  // paths (handles macOS /var→/private/var), fall back to resolve.
+  let resolvedPath: string;
+  let resolvedRoot: string;
+  try {
+    resolvedRoot = await realpath(resolve(rootDir));
+  } catch {
+    resolvedRoot = resolve(rootDir);
+  }
+  try {
+    resolvedPath = await realpath(resolve(filePath));
+  } catch {
+    // Path doesn't exist yet — use resolve to normalize, then re-apply
+    // realpath prefix. On macOS /tmp → /private/tmp, resolve() returns
+    // /var/... while realpath returns /private/var/.... Re-resolve relative
+    // to the real root to stay consistent.
+    const rawResolved = resolve(filePath);
+    const rawRoot = resolve(rootDir);
+    if (isWithinRoot(rawResolved, rawRoot)) {
+      // Path is within unresolved root — reconstruct under resolved root
+      const relative = rawResolved.slice(rawRoot.length);
+      resolvedPath = resolvedRoot + relative;
+    } else {
+      resolvedPath = rawResolved;
+    }
+  }
 
   if (!isWithinRoot(resolvedPath, resolvedRoot)) {
     throw new PathTraversalError(resolvedPath, resolvedRoot);
