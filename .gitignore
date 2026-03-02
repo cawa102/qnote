@@ -3,3 +3,16 @@ dist/
 coverage/
 *.tsbuildinfo
 .DS_Store
+
+# Development tooling (Claude Code)
+CLAUDE.md
+.claude/
+skills-lock.json
+
+# Internal development docs
+docs/
+codemaps/
+.reports/
+
+# Temporary files
+tmp-*
