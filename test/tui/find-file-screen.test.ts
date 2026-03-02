@@ -117,7 +117,7 @@ describe('FindFileScreen rendering', () => {
   it('shows loading state initially', () => {
     const { lastFrame } = renderFindFile();
     const frame = stripAnsi(lastFrame() ?? '');
-    expect(frame).toContain('読み込み中');
+    expect(frame).toContain('Loading');
   });
 
   it('renders search input with bold border box after loading', async () => {
@@ -134,6 +134,6 @@ describe('FindFileScreen rendering', () => {
     const { lastFrame } = renderFindFile();
     await new Promise((resolve) => setTimeout(resolve, 50));
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('ファイル検索');
+    expect(frame).toContain('Find File');
   });
 });

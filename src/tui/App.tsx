@@ -172,7 +172,7 @@ function AppContent({
         backlinkCount: 0,
       }));
       setNoteListItems(items);
-      setNoteListTitle(`#${currentEntry.tag} のノート`);
+      setNoteListTitle(`#${currentEntry.tag}`);
     }
   }, [currentEntry, noteService]);
 
@@ -217,7 +217,7 @@ function AppContent({
                       backlinkCount: 0,
                     }));
                     setNoteListItems(items);
-                    setNoteListTitle(`#${newTag} のノート`);
+                    setNoteListTitle(`#${newTag}`);
                   });
                 } : undefined}
               />

@@ -77,7 +77,7 @@ export function handleRenameInput(
 
 // ─── Scope selection options ──────────────────────────────────
 
-const SCOPE_OPTIONS = ['全ノートに適用', 'このノートのみ'] as const;
+const SCOPE_OPTIONS = ['Apply to all notes', 'This note only'] as const;
 
 // ─── Component ────────────────────────────────────────────────
 
@@ -167,7 +167,7 @@ export function NoteList({ title, items, nav, tag, onRenameTag }: NoteListProps)
       {/* Rename UI overlays */}
       {renameState.phase === 'scopeSelect' && (
         <Box flexDirection="column" marginTop={1} paddingLeft={2}>
-          <Text>{theme.bold('タグ名変更の範囲:')}</Text>
+          <Text>{theme.bold('Rename scope:')}</Text>
           {SCOPE_OPTIONS.map((label, i) => {
             const isSelected = i === (renameState as { scopeIndex: number }).scopeIndex;
             return (
@@ -181,7 +181,7 @@ export function NoteList({ title, items, nav, tag, onRenameTag }: NoteListProps)
 
       {renameState.phase === 'editing' && (
         <Box marginTop={1} paddingLeft={2}>
-          <Text>新しいタグ名: </Text>
+          <Text>New tag name: </Text>
           <TextInput
             defaultValue={renameState.newTag}
             onChange={handleTagChange}
@@ -192,7 +192,7 @@ export function NoteList({ title, items, nav, tag, onRenameTag }: NoteListProps)
       {renameState.phase === 'confirming' && (
         <Box marginTop={1} paddingLeft={2}>
           <Text>
-            タグを「{renameState.newTag}」に変更します。続行？ (Enter/Esc)
+            Rename tag to {'"'}{renameState.newTag}{'"'}? (Enter/Esc)
           </Text>
         </Box>
       )}

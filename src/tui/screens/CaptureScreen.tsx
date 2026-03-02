@@ -109,7 +109,7 @@ export function CaptureScreen({
   if (saved) {
     return (
       <Box>
-        <Text color="green">保存しました → {captureDir}/</Text>
+        <Text color="green">Saved → {captureDir}/</Text>
       </Box>
     );
   }
@@ -121,11 +121,11 @@ export function CaptureScreen({
         <Text>  Title: </Text>
         {phase === 'title' ? (
           <TextInput
-            placeholder="タイトルを入力..."
+            placeholder="Enter title..."
             onChange={(value) => setTitle(value)}
           />
         ) : (
-          <Text>{title || theme.dim('(無題)')}</Text>
+          <Text>{title || theme.dim('(untitled)')}</Text>
         )}
       </Box>
 
@@ -133,7 +133,7 @@ export function CaptureScreen({
         <Box marginTop={1}>
           <Text>  Memo:  </Text>
           <TextInput
-            placeholder="メモを入力... (空でもOK)"
+            placeholder="Enter note... (optional)"
             onChange={(value) => setBody(value)}
           />
         </Box>
@@ -148,8 +148,8 @@ export function CaptureScreen({
       <Box marginTop={2}>
         <Text dimColor>
           {phase === 'title'
-            ? '  Enter: 次へ  Tab: エディタで編集  Esc: 戻る'
-            : '  Enter: 保存  Tab: エディタで編集  Esc: 戻る'}
+            ? '  Enter: Next  Tab: Open editor  Esc: Back'
+            : '  Enter: Save  Tab: Open editor  Esc: Back'}
         </Text>
       </Box>
     </Box>

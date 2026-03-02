@@ -122,19 +122,19 @@ export function FindFileScreen({
   if (fileState.isLoading) {
     return (
       <Box flexDirection="column">
-        <Text dimColor>  読み込み中...</Text>
+        <Text dimColor>  Loading...</Text>
       </Box>
     );
   }
 
   const fileCount = fileState.files.length === 0
-    ? 'ノートがありません'
-    : `${displayEntries.length} 件`;
+    ? 'No notes found'
+    : `${displayEntries.length} files`;
 
   return (
     <Box flexDirection="column">
       <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth} flexShrink={0}>
-        <Text> ファイル検索 {'>'} </Text>
+        <Text> Find File {'>'} </Text>
         <TextInput placeholder="search files..." onChange={handleChange} />
       </Box>
       <Text dimColor>  {fileCount}</Text>

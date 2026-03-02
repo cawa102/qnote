@@ -202,13 +202,13 @@ export function TagListScreen({
   });
 
   const tagCount = allTags.length === 0
-    ? 'タグがありません'
-    : `${displayEntries.length} 件`;
+    ? 'No tags found'
+    : `${displayEntries.length} tags`;
 
   return (
     <Box flexDirection="column">
       <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth} flexShrink={0}>
-        <Text> タグ検索 {'>'} </Text>
+        <Text> Tags {'>'} </Text>
         <TextInput placeholder="search tags..." onChange={handleChange} />
       </Box>
       <Text dimColor>  {tagCount}</Text>
@@ -243,7 +243,7 @@ export function TagListScreen({
       {renameState.phase === 'confirming' && (
         <Box marginTop={1} paddingLeft={2}>
           <Text>
-            {renameState.pendingCount}件のノートが更新されます。続行？ (Enter/Esc)
+            {renameState.pendingCount} notes will be updated. Continue? (Enter/Esc)
           </Text>
         </Box>
       )}

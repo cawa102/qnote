@@ -106,23 +106,23 @@ describe('TagListScreen rendering', () => {
     expect(frame).toContain('┗');
   });
 
-  it('renders label text "タグ検索"', () => {
+  it('renders label text "Tags"', () => {
     const { lastFrame } = renderTagList();
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('タグ検索');
+    expect(frame).toContain('Tags');
   });
 
-  it('displays tag count as "N 件"', () => {
+  it('displays tag count as "N tags"', () => {
     const { lastFrame } = renderTagList();
     const frame = stripAnsi(lastFrame() ?? '');
-    expect(frame).toContain('4 件');
+    expect(frame).toContain('4 tags');
   });
 
-  it('shows "タグがありません" when no tags exist', () => {
+  it('shows "No tags found" when no tags exist', () => {
     const emptyNs = createMockNoteService([]);
     const { lastFrame } = renderTagList(emptyNs);
     const frame = stripAnsi(lastFrame() ?? '');
-    expect(frame).toContain('タグがありません');
+    expect(frame).toContain('No tags found');
   });
 
   it('displays tag names with # prefix and count', () => {

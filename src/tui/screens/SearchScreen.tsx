@@ -22,7 +22,7 @@ export function buildSearchHint(
   resultCount?: number,
 ): string {
   if (query.trim().length === 0) return '';
-  if (!didSearch) return 'もう少し入力してください';
+  if (!didSearch) return 'Type to search...';
   return `${resultCount ?? 0} results`;
 }
 
@@ -88,7 +88,7 @@ export function SearchScreen({
   return (
     <Box flexDirection="column">
       <Box borderStyle="bold" borderColor="#56b6c2" width={contentWidth}>
-        <Text> 検索 {'>'} </Text>
+        <Text> Search {'>'} </Text>
         <TextInput placeholder="search notes..." onChange={handleChange} />
       </Box>
 

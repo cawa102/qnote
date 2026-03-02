@@ -50,7 +50,7 @@ afterEach(() => {
 describe('buildSearchHint', () => {
   it('returns minimum-length hint when query is too short', () => {
     const hint = buildSearchHint('a', false);
-    expect(hint).toBe('もう少し入力してください');
+    expect(hint).toBe('Type to search...');
   });
 
   it('returns results count when search was performed', () => {
@@ -86,6 +86,6 @@ describe('SearchScreen rendering', () => {
   it('renders label text inside the bordered area', () => {
     const { lastFrame } = renderSearchScreen();
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('検索');
+    expect(frame).toContain('Search');
   });
 });

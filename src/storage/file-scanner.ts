@@ -1,4 +1,4 @@
-// NOTE: file-tree-builder.ts と走査ロジックが重複。シンボリックリンク保護は同パターンを適用
+// NOTE: Scanning logic overlaps with file-tree-builder.ts. Same symlink protection pattern applied.
 
 import { readdir, realpath, stat } from 'fs/promises';
 import { join, relative, resolve } from 'path';

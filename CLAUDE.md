@@ -112,11 +112,11 @@ Custom `AppError` hierarchy defined in `types.ts`: `NoteNotFoundError`, `SlugCol
 
 ## Agent Team Development Rules
 
-AgentTeam による並行開発時、各エージェントはコンテキストウィンドウに余裕を持って作業すること。
+When working with AgentTeam in parallel development, each agent should operate with sufficient context window headroom.
 
-**コンテキストウィンドウ管理（必須）:**
-- 次のタスクに取り掛かる前に、コンテキストウィンドウの使用率を確認する
-- **使用率が50%を超えている場合**: そのエージェントでの開発を続行せず、新しいエージェントをスポーンして引き継ぐ
-- 引き継ぎ時は、完了済みタスク・現在の状態・次に着手すべきタスクを明確に伝達する
-- これにより各エージェントが十分なコンテキスト容量を持った状態で開発を行い、品質低下を防ぐ
+**Context Window Management (MANDATORY):**
+- Check context window usage before starting each new task
+- **If usage exceeds 50%**: Do NOT continue development in the current agent — spawn a new agent to take over
+- On handoff, clearly communicate: completed tasks, current state, and next task to pick up
+- This ensures each agent operates with sufficient context capacity, preventing quality degradation
 
