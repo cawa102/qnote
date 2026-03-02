@@ -5,6 +5,7 @@ import { theme } from '../../theme/colors.js';
 import { formatTag, formatDate } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
+import { useViewport } from '../hooks/use-viewport.js';
 import type { NoteService } from '../../core/note-service.js';
 import type { SearchIndex } from '../../storage/search-index.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
@@ -41,7 +42,7 @@ export function SearchScreen({
 }: SearchScreenProps): React.ReactElement {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { contentWidth } = useLayoutContext();
+  const { contentWidth, rows } = useLayoutContext();
 
   // 150ms debounce on query
   const debouncedQuery = useDebounce(query, DEBOUNCE_MS);
@@ -58,6 +59,12 @@ export function SearchScreen({
   );
 
   const hint = buildSearchHint(debouncedQuery, shouldSearch, results.length);
+
+  // Header: border box (3) + hint line (1) + marginTop (1) = 5 rows; Footer: 1 row
+  // Each result: ~4 rows (separator + title + snippet + tags; first item 3 rows)
+  const maxVisibleItems = Math.floor((rows - 5 - 1) / 4);
+  const { scrollOffset, visibleCount } = useViewport(results.length, selectedIndex, maxVisibleItems);
+  const visibleResults = results.slice(scrollOffset, scrollOffset + visibleCount);
 
   // Set input mode to text on mount
   React.useEffect(() => {
@@ -95,8 +102,8 @@ export function SearchScreen({
       <Text dimColor>  {hint || ' '}</Text>
 
       <Box flexDirection="column" marginTop={1}>
-        {results.map((result, i) => {
-          const isSelected = i === selectedIndex;
+        {visibleResults.map((result, i) => {
+          const isSelected = scrollOffset + i === selectedIndex;
           return (
             <React.Fragment key={result.filePath}>
               {i > 0 && (

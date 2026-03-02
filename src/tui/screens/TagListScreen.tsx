@@ -6,6 +6,7 @@ import { theme } from '../../theme/colors.js';
 import { formatIndicator } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
+import { useViewport } from '../hooks/use-viewport.js';
 import type { NoteService } from '../../core/note-service.js';
 import type { TagCount } from '../../storage/search-index.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
@@ -112,7 +113,7 @@ export function TagListScreen({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [renameState, setRenameState] = useState<TagRenameState>(TAG_RENAME_IDLE);
   const [tagVersion, setTagVersion] = useState(0);
-  const { contentWidth } = useLayoutContext();
+  const { contentWidth, rows } = useLayoutContext();
   const fuseRef = useRef<Fuse<TagCount> | null>(null);
 
   const allTags = noteService.listTags();
@@ -144,6 +145,11 @@ export function TagListScreen({
     debouncedQuery,
     fuseRef.current,
   );
+
+  // Header: border box (3) + count line (1) = 4 rows; Footer: 1 row
+  const maxVisible = rows - 4 - 1;
+  const { scrollOffset, visibleCount } = useViewport(displayEntries.length, selectedIndex, maxVisible);
+  const visibleEntries = displayEntries.slice(scrollOffset, scrollOffset + visibleCount);
 
   const selectedTag = displayEntries[selectedIndex]?.tag;
 
@@ -214,8 +220,8 @@ export function TagListScreen({
       <Text dimColor>  {tagCount}</Text>
 
       <Box flexDirection="column">
-        {displayEntries.map((tagEntry, i) => {
-          const isSelected = i === selectedIndex;
+        {visibleEntries.map((tagEntry, i) => {
+          const isSelected = scrollOffset + i === selectedIndex;
           const isEditing = renameState.phase === 'editing' && isSelected;
           return (
             <Box key={tagEntry.tag}>

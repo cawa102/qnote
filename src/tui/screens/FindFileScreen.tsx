@@ -6,6 +6,7 @@ import { theme } from '../../theme/colors.js';
 import { formatIndicator } from '../../theme/format.js';
 import { useDebounce } from '../hooks/use-debounce.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
+import { useViewport } from '../hooks/use-viewport.js';
 import { scanNoteFiles } from '../../storage/file-scanner.js';
 import type { ScannedFile } from '../../storage/file-scanner.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
@@ -57,7 +58,7 @@ export function FindFileScreen({
     readonly files: readonly ScannedFile[];
     readonly isLoading: boolean;
   }>({ files: [], isLoading: true });
-  const { contentWidth } = useLayoutContext();
+  const { contentWidth, rows } = useLayoutContext();
   const fuseRef = useRef<Fuse<ScannedFile> | null>(null);
 
   const debouncedQuery = useDebounce(query, DEBOUNCE_MS);
@@ -115,6 +116,11 @@ export function FindFileScreen({
     }
   });
 
+  // Header: border box (3) + count line (1) = 4 rows; Footer: 1 row
+  const maxVisible = rows - 4 - 1;
+  const { scrollOffset, visibleCount } = useViewport(displayEntries.length, selectedIndex, maxVisible);
+  const visibleEntries = displayEntries.slice(scrollOffset, scrollOffset + visibleCount);
+
   // Show loading state without border to avoid re-render border corruption.
   // Ink's log-update differential rendering breaks bordered boxes during
   // async state changes. By deferring the border until data is ready,
@@ -140,8 +146,8 @@ export function FindFileScreen({
       <Text dimColor>  {fileCount}</Text>
 
       <Box flexDirection="column">
-        {displayEntries.map((file, i) => {
-          const isSelected = i === selectedIndex;
+        {visibleEntries.map((file, i) => {
+          const isSelected = scrollOffset + i === selectedIndex;
           return (
             <Box key={file.relativePath}>
               <Text>

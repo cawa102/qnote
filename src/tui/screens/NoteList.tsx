@@ -10,6 +10,7 @@ import {
   formatRuler,
 } from '../../theme/format.js';
 import { useLayoutContext } from '../hooks/layout-context.js';
+import { useViewport } from '../hooks/use-viewport.js';
 import type { NavigationStore } from '../hooks/use-navigation.js';
 import type { NoteListItem } from '../../types.js';
 
@@ -92,7 +93,13 @@ interface NoteListProps {
 export function NoteList({ title, items, nav, tag, onRenameTag }: NoteListProps): React.ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [renameState, setRenameState] = useState<RenameState>(IDLE);
-  const { contentWidth } = useLayoutContext();
+  const { contentWidth, rows } = useLayoutContext();
+
+  // Header: title (1) + marginTop (1) = 2 rows; Footer: 1 row + count line (1) = 2 rows
+  // Each item: ~3 rows (title + meta + marginBottom)
+  const maxVisibleItems = Math.floor((rows - 2 - 2) / 3);
+  const { scrollOffset, visibleCount } = useViewport(items.length, selectedIndex, maxVisibleItems);
+  const visibleItems = items.slice(scrollOffset, scrollOffset + visibleCount);
 
   const handleTagChange = useCallback((value: string) => {
     setRenameState((prev) => {
@@ -145,8 +152,8 @@ export function NoteList({ title, items, nav, tag, onRenameTag }: NoteListProps)
     <Box flexDirection="column">
       <Text>{theme.bold(title)} {formatRuler(Math.max(0, contentWidth - title.length - 1))}</Text>
       <Box flexDirection="column" marginTop={1}>
-        {items.map((item, i) => {
-          const isSelected = i === selectedIndex;
+        {visibleItems.map((item, i) => {
+          const isSelected = scrollOffset + i === selectedIndex;
           return (
             <Box key={item.filePath} flexDirection="column" marginBottom={1}>
               <Text>
