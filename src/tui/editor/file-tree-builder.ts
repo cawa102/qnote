@@ -1,5 +1,6 @@
 import { readdir, realpath, stat } from 'fs/promises';
 import { join, basename, resolve } from 'path';
+import { isWithinRoot } from '../../storage/path-utils.js';
 import type { FileTreeNode } from './types.js';
 
 export interface FlatTreeEntry {
@@ -41,7 +42,7 @@ async function scanDirectory(
 
     if (entry.isSymbolicLink()) {
       const realTarget = await realpath(entryPath);
-      if (!realTarget.startsWith(realRootPath)) {
+      if (!isWithinRoot(realTarget, realRootPath)) {
         continue;
       }
       // Symlink passed validation — stat the target to determine type
@@ -51,7 +52,7 @@ async function scanDirectory(
     } else {
       // For non-symlinks, realpath the entry to compare against realRootPath
       const realEntryPath = await realpath(entryPath);
-      if (!realEntryPath.startsWith(realRootPath)) {
+      if (!isWithinRoot(realEntryPath, realRootPath)) {
         continue;
       }
       isDir = entry.isDirectory();

@@ -162,6 +162,25 @@ describe('buildFileTree', () => {
     expect(names).toContain('real');
   });
 
+  it('excludes symlinks to prefix-match sibling directory', async () => {
+    // Create a sibling dir whose name starts with tempDir's name (e.g. /notes-evil vs /notes)
+    const siblingDir = `${tempDir}-evil`;
+    await mkdir(siblingDir);
+    await writeFile(join(siblingDir, 'secret.md'), '# Secret');
+
+    // Create a symlink inside tempDir pointing to the sibling
+    await symlink(siblingDir, join(tempDir, 'evil-link'));
+    await writeFile(join(tempDir, 'safe.md'), '# Safe');
+
+    const tree = await buildFileTree(tempDir);
+    const children = tree.children ?? [];
+    const names = children.map((c) => c.name);
+    expect(names).toContain('safe.md');
+    expect(names).not.toContain('evil-link');
+
+    await rm(siblingDir, { recursive: true, force: true });
+  });
+
   it('excludes empty subdirectories with no markdown files', async () => {
     await mkdir(join(tempDir, 'emptydir'));
 
