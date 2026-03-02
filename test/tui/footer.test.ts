@@ -112,45 +112,18 @@ describe('getHintsForScreen', () => {
     expect(hintsWithTag).toEqual(hintsWithout);
   });
 
-  describe('editor hints with focus context', () => {
-    it('shows "Esc: editor" when focus is headerTitle', () => {
-      const hints = getHintsForScreen('editor', 'headerTitle');
-      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
-      const keys = hints.map((h) => h.key);
-      // Should not contain the default "back" for Esc
-      const escEntry = hints.find((h) => h.key === 'Esc');
-      expect(escEntry?.desc).toBe('editor');
+  describe('editor hints ignore focus context', () => {
+    it('always shows "Esc: back" regardless of focus', () => {
+      for (const focus of ['editor', 'headerTitle', 'headerTags', 'fileTree'] as const) {
+        const hints = getHintsForScreen('editor', focus);
+        expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
+      }
     });
 
-    it('shows "Esc: editor" when focus is headerTags', () => {
-      const hints = getHintsForScreen('editor', 'headerTags');
-      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
-    });
-
-    it('shows "Esc: back" when focus is editor (default)', () => {
-      const hints = getHintsForScreen('editor', 'editor');
-      expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
-    });
-
-    it('shows "Esc: back" when no focus provided', () => {
-      const hints = getHintsForScreen('editor');
-      expect(hints).toContainEqual({ key: 'Esc', desc: 'back' });
-    });
-
-    it('shows "Enter: done" when focus is headerTitle', () => {
-      const hints = getHintsForScreen('editor', 'headerTitle');
-      expect(hints).toContainEqual({ key: 'Enter', desc: 'done' });
-    });
-
-    it('does not show "Enter: done" when focus is editor', () => {
-      const hints = getHintsForScreen('editor', 'editor');
-      const enterEntry = hints.find((h) => h.key === 'Enter');
-      expect(enterEntry).toBeUndefined();
-    });
-
-    it('shows "Esc: editor" when focus is fileTree', () => {
-      const hints = getHintsForScreen('editor', 'fileTree');
-      expect(hints).toContainEqual({ key: 'Esc', desc: 'editor' });
+    it('shows same hints with or without focus', () => {
+      const withFocus = getHintsForScreen('editor', 'headerTags');
+      const withoutFocus = getHintsForScreen('editor');
+      expect(withFocus).toEqual(withoutFocus);
     });
   });
 });

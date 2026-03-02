@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -30,7 +30,6 @@ interface EditorScreenProps {
   readonly inputMode: InputModeStore;
   readonly initialFilePath?: string;
   readonly showFileTree?: boolean;
-  readonly onFocusChange?: (focus: FocusArea) => void;
 }
 
 const MIN_TREE_WIDTH = 15;
@@ -185,25 +184,14 @@ export function EditorScreen({
   inputMode,
   initialFilePath,
   showFileTree: initialShowFileTree,
-  onFocusChange,
 }: EditorScreenProps): React.ReactElement {
   const { contentWidth, rows } = useLayoutContext();
 
   // Core state
   const [bufferManager, setBufferManager] = useState(() => BufferManager.create());
   const [mode, setMode] = useState<EditorMode>('edit');
-  const [focus, setFocusRaw] = useState<FocusArea>('editor');
+  const [focus, setFocus] = useState<FocusArea>('editor');
 
-  // Wrap setFocus to notify parent
-  const setFocus = useCallback((next: FocusArea | ((prev: FocusArea) => FocusArea)) => {
-    setFocusRaw((prev) => {
-      const resolved = typeof next === 'function' ? next(prev) : next;
-      if (resolved !== prev) {
-        onFocusChange?.(resolved);
-      }
-      return resolved;
-    });
-  }, [onFocusChange]);
   const [fileTreeVisible, setFileTreeVisible] = useState(initialShowFileTree ?? false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -226,10 +214,6 @@ export function EditorScreen({
   // Title/tags state for header bar
   const [headerTitle, setHeaderTitle] = useState('');
   const [headerTags, setHeaderTags] = useState<readonly string[]>([]);
-
-  // Suppress spurious TextInput onChange during Ctrl+key focus transitions.
-  // @inkjs/ui TextInput doesn't filter Ctrl+T/G, so the character leaks into the input.
-  const suppressHeaderChangeRef = useRef(false);
 
   // Set input mode on mount
   useEffect(() => {
@@ -258,14 +242,18 @@ export function EditorScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFilePath]);
 
-  // Sync header when active buffer changes
+  // Sync header only when active buffer switches (ID changes), not on every edit.
+  // bufferManager.updateEditor() creates a new BufferManager on each keystroke
+  // but never updates meta — so reading meta here would overwrite user edits.
+  const activeBufferId = bufferManager.getActive()?.id ?? null;
   useEffect(() => {
-    const active = bufferManager.getActive();
-    if (active) {
-      setHeaderTitle(active.meta.title);
-      setHeaderTags(active.meta.tags);
+    const current = bufferManager.getActive();
+    if (current) {
+      setHeaderTitle(current.meta.title);
+      setHeaderTags(current.meta.tags);
     }
-  }, [bufferManager]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBufferId]);
 
   // M-8: Load file tree from disk when it becomes visible
   useEffect(() => {
@@ -372,11 +360,22 @@ export function EditorScreen({
       setSaveStatus('saved');
 
       // H-4: Update search index after successful save
-      // TODO: noteService.upsertIndex() — full index update requires reading the saved file back
-      // For now, trigger a reindex of this specific file if the method is available
-
-      // Auto-clear saved status after 2s
-      setTimeout(() => setSaveStatus('saved'), 2000);
+      try {
+        noteService.updateIndex({
+          filePath: active.filePath,
+          title: headerTitle,
+          tags: [...headerTags],
+          content: contentSnapshot,
+          created: active.meta.created,
+          modified: now,
+        });
+      } catch {
+        // File was saved successfully, but index update failed.
+        // Show warning and let user recover with `qnote reindex`.
+        setSaveStatus('error');
+        setErrorMessage('Saved file, but failed to update search index. Run qnote reindex.');
+        return;
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Save failed';
       setErrorMessage(message);
@@ -507,11 +506,6 @@ export function EditorScreen({
       if (mode === 'edit') {
         const nextFocus = getNextHeaderFocus(focus, input);
         if (nextFocus) {
-          // Suppress the next TextInput onChange to prevent character leakage.
-          // @inkjs/ui's TextInput doesn't filter Ctrl+T/G and would insert
-          // the character into the input field.
-          suppressHeaderChangeRef.current = true;
-          setTimeout(() => { suppressHeaderChangeRef.current = false; }, 0);
           setFocus(nextFocus);
           return;
         }
@@ -653,12 +647,8 @@ export function EditorScreen({
             mode={mode}
             width={editorWidth}
             focused={focus}
-            onTitleChange={(value) => {
-              if (!suppressHeaderChangeRef.current) setHeaderTitle(value);
-            }}
-            onTagsChange={(tags) => {
-              if (!suppressHeaderChangeRef.current) setHeaderTags(tags);
-            }}
+            onTitleChange={setHeaderTitle}
+            onTagsChange={setHeaderTags}
             onFocusEditor={() => setFocus('editor')}
           />
         )}

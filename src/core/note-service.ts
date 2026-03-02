@@ -66,6 +66,39 @@ export class NoteService {
     return this.index.getBacklinks(slug);
   }
 
+  /**
+   * Update the search index for a note using pre-computed data.
+   * Called after EditorScreen saves a file to disk — avoids re-reading from filesystem.
+   */
+  updateIndex(entry: {
+    readonly filePath: string;
+    readonly title: string;
+    readonly tags: readonly string[];
+    readonly content: string;
+    readonly created: string;
+    readonly modified: string;
+  }): void {
+    this.index.upsert({
+      filePath: entry.filePath,
+      title: entry.title,
+      tags: [...entry.tags],
+      content: entry.content,
+      created: entry.created,
+      modified: entry.modified,
+    });
+
+    const links = extractWikiLinks(entry.content);
+    if (links.length > 0) {
+      this.index.upsertLinks(
+        entry.filePath,
+        links.map((link) => ({
+          targetSlug: link.target,
+          targetText: link.displayText,
+        })),
+      );
+    }
+  }
+
   async reindex(): Promise<number> {
     const files = await this.repo.listFiles();
     let count = 0;

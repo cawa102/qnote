@@ -44,8 +44,9 @@ function TagChips({ tags, selectedIndex }: {
   readonly tags: readonly string[];
   readonly selectedIndex?: number;
 }): React.ReactElement {
+  // Always return <Box> root to keep DOM shape stable (prevents Ink diff corruption).
   if (tags.length === 0) {
-    return <Text> </Text>;
+    return <Box gap={1}><Text> </Text></Box>;
   }
 
   return (
@@ -55,6 +56,39 @@ function TagChips({ tags, selectedIndex }: {
           {i === selectedIndex ? theme.selected(`#${tag}`) : theme.tag(`#${tag}`)}
         </Text>
       ))}
+    </Box>
+  );
+}
+
+/**
+ * Tag input slot with stable DOM shape: always renders <Box><Text/><Text/></Box>
+ * regardless of active/inactive state. This prevents Ink's diff algorithm from
+ * corrupting the output when the focus transitions between editor and headerTags.
+ */
+function TagInputSlot({ active, text }: {
+  readonly active: boolean;
+  readonly text: string;
+}): React.ReactElement {
+  if (!active) {
+    return (
+      <Box>
+        <Text> </Text>
+        <Text> </Text>
+      </Box>
+    );
+  }
+  if (text.length > 0) {
+    return (
+      <Box>
+        <Text>{text}</Text>
+        <Text inverse> </Text>
+      </Box>
+    );
+  }
+  return (
+    <Box>
+      <Text inverse>a</Text>
+      <Text dimColor>dd tag...</Text>
     </Box>
   );
 }
@@ -71,9 +105,19 @@ export function EditorHeaderBar({
   onFocusEditor,
 }: EditorHeaderBarProps): React.ReactElement {
   const [tagInput, setTagInput] = React.useState('');
-  const [tagInputKey, setTagInputKey] = React.useState(0);
+  const [titleInputKey, setTitleInputKey] = React.useState(0);
   const [tagCursor, setTagCursor] = React.useState(tags.length);
   const localTagChangeRef = React.useRef(false);
+
+  // Track Ctrl+key presses to suppress character leakage from @inkjs/ui TextInput.
+  // Only needed for the title input (tags use a custom handler that filters Ctrl).
+  const ctrlKeyRef = React.useRef(false);
+
+  useInput((_input, key) => {
+    if (key.ctrl) {
+      ctrlKeyRef.current = true;
+    }
+  }, { isActive: focused === 'headerTitle' });
 
   // Reset cursor to input position when focus changes or tags change externally.
   // Skip reset when tags changed due to local deletion (localTagChangeRef).
@@ -85,23 +129,30 @@ export function EditorHeaderBar({
     setTagCursor(tags.length);
   }, [focused, tags.length]);
 
-  const tagSelected = focused === 'headerTags' && tagCursor < tags.length;
-
-  const handleTagSubmit = React.useCallback((value: string) => {
-    const trimmed = value.trim();
-    if (trimmed.length > 0 && !tags.includes(trimmed)) {
-      onTagsChange([...tags, trimmed]);
+  // Clear tag input when focus enters headerTags
+  React.useEffect(() => {
+    if (focused === 'headerTags') {
+      setTagInput('');
     }
-    // Force TextInput remount to clear its internal uncontrolled state
-    setTagInput('');
-    setTagInputKey((k) => k + 1);
-  }, [tags, onTagsChange]);
+  }, [focused]);
+
+  const tagSelected = focused === 'headerTags' && tagCursor < tags.length;
 
   const handleTitleSubmit = React.useCallback(() => {
     onFocusEditor();
   }, [onFocusEditor]);
 
-  // Handle keys when a tag is selected (TextInput is disabled)
+  // Discard Ctrl+key character leakage from title TextInput.
+  const handleTitleInputChange = React.useCallback((value: string) => {
+    if (ctrlKeyRef.current) {
+      ctrlKeyRef.current = false;
+      setTitleInputKey((k) => k + 1);
+      return;
+    }
+    onTitleChange(value);
+  }, [onTitleChange]);
+
+  // Handle keys when a tag chip is selected (arrow/backspace navigation)
   useInput((_input, key) => {
     const keyName = key.leftArrow ? 'left'
       : key.rightArrow ? 'right'
@@ -126,18 +177,55 @@ export function EditorHeaderBar({
     }
   }, { isActive: tagSelected });
 
-  // Handle backspace/left on empty input to transition into tag selection
-  useInput((_input, key) => {
-    const keyName = key.leftArrow ? 'left'
-      : (key.backspace || key.delete) ? 'backspace'
-      : undefined;
-    if (!keyName) return;
+  // Custom tag input handler — replaces @inkjs/ui TextInput for tags.
+  // This avoids character leakage from Ctrl+key combos (we filter them explicitly)
+  // and eliminates the mount/unmount cycle that caused rendering issues.
+  useInput((input, key) => {
+    if (key.return) {
+      const trimmed = tagInput.trim();
+      if (trimmed.length > 0 && !tags.includes(trimmed)) {
+        onTagsChange([...tags, trimmed]);
+      }
+      setTagInput('');
+      return;
+    }
 
-    const action = handleTagKey(keyName, tags.length, tagCursor, tagInput.length === 0);
-    if (action.type === 'select') {
-      setTagCursor(action.index);
+    if (key.backspace || key.delete) {
+      if (tagInput.length === 0) {
+        // Transition to tag selection when empty
+        const action = handleTagKey('backspace', tags.length, tagCursor, true);
+        if (action.type === 'select') {
+          setTagCursor(action.index);
+        }
+      } else {
+        setTagInput((prev) => prev.slice(0, -1));
+      }
+      return;
+    }
+
+    if (key.leftArrow) {
+      if (tagInput.length === 0) {
+        const action = handleTagKey('left', tags.length, tagCursor, true);
+        if (action.type === 'select') {
+          setTagCursor(action.index);
+        }
+      }
+      return;
+    }
+
+    // Ignore all control/modifier keys and non-printable input
+    if (key.ctrl || key.meta || key.escape || key.tab ||
+        key.upArrow || key.downArrow || key.rightArrow) {
+      return;
+    }
+
+    // Insert printable character
+    if (input.length >= 1) {
+      setTagInput((prev) => prev + input);
     }
   }, { isActive: focused === 'headerTags' && tagCursor === tags.length });
+
+  const showTagInput = focused === 'headerTags' && !tagSelected;
 
   return (
     <Box flexDirection="column" width={width}>
@@ -147,8 +235,9 @@ export function EditorHeaderBar({
           <Text dimColor>Title: </Text>
           {focused === 'headerTitle' ? (
             <TextInput
+              key={titleInputKey}
               defaultValue={title}
-              onChange={onTitleChange}
+              onChange={handleTitleInputChange}
               onSubmit={handleTitleSubmit}
             />
           ) : (
@@ -161,25 +250,16 @@ export function EditorHeaderBar({
         </Box>
       </Box>
 
-      {/* Line 2: Tags */}
+      {/* Line 2: Tags — fixed layout slot for tag input (prevents Ink diff issues on focus change) */}
       <Box>
         <Text dimColor>Tags:  </Text>
         <TagChips
           tags={tags}
           selectedIndex={tagSelected ? tagCursor : undefined}
         />
-        {focused === 'headerTags' && (
-          <Box marginLeft={1}>
-            <TextInput
-              key={tagInputKey}
-              defaultValue={tagInput}
-              onChange={setTagInput}
-              onSubmit={handleTagSubmit}
-              placeholder="add tag..."
-              isDisabled={tagSelected}
-            />
-          </Box>
-        )}
+        <Box marginLeft={1}>
+          <TagInputSlot active={showTagInput} text={tagInput} />
+        </Box>
       </Box>
 
       {/* Line 3: Separator */}

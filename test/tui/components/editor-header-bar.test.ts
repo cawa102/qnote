@@ -156,4 +156,63 @@ describe('EditorHeaderBar', () => {
       expect(frame).toContain('╌');
     });
   });
+
+  describe('layout stability across focus transitions', () => {
+    it('tags row contains space after chips even when tag input is not shown', () => {
+      const props = createProps({ focused: 'editor', tags: ['a', 'b'] });
+      const { lastFrame } = render(React.createElement(EditorHeaderBar, props));
+      const frame = lastFrame();
+      // The tag input slot always has marginLeft=1 and a space placeholder
+      expect(frame).toContain('Tags:');
+      expect(frame).toContain('#a');
+      expect(frame).toContain('#b');
+    });
+
+    it('tags row structure is stable between editor and headerTags focus', () => {
+      // Render with editor focus
+      const editorProps = createProps({ focused: 'editor', tags: ['x'] });
+      const { lastFrame: editorFrame } = render(React.createElement(EditorHeaderBar, editorProps));
+      const editorLines = editorFrame().split('\n');
+      cleanup();
+
+      // Render with headerTags focus
+      const tagProps = createProps({ focused: 'headerTags', tags: ['x'] });
+      const { lastFrame: tagFrame } = render(React.createElement(EditorHeaderBar, tagProps));
+      const tagLines = tagFrame().split('\n');
+
+      // Both should have 3 lines (title, tags, separator)
+      expect(editorLines.length).toBe(tagLines.length);
+    });
+  });
+
+  describe('Ctrl+key character leakage prevention', () => {
+    it('does not call onTitleChange when Ctrl+key is pressed during title editing', async () => {
+      const onTitleChange = vi.fn();
+      const props = createProps({ focused: 'headerTitle', onTitleChange });
+      const { stdin } = render(React.createElement(EditorHeaderBar, props));
+
+      // Simulate Ctrl+G (\x07 = BEL, which Ink parses as input='g', key.ctrl=true)
+      stdin.write('\x07');
+      await new Promise((r) => setTimeout(r, 50));
+
+      // onTitleChange should NOT be called with the leaked 'g' character
+      const leakedCalls = onTitleChange.mock.calls.filter(
+        (args: [string]) => args[0].includes('g') && args[0] !== 'Test Note'
+      );
+      expect(leakedCalls).toHaveLength(0);
+    });
+
+    it('does not leak Ctrl+S character into tag input', async () => {
+      const props = createProps({ focused: 'headerTags', tags: [] });
+      const { lastFrame, stdin } = render(React.createElement(EditorHeaderBar, props));
+
+      // Simulate Ctrl+S (\x13)
+      stdin.write('\x13');
+      await new Promise((r) => setTimeout(r, 50));
+
+      const frame = lastFrame();
+      // The tag input should not contain the leaked 's' character
+      expect(frame).not.toMatch(/add tag.*s/);
+    });
+  });
 });

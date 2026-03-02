@@ -61,25 +61,9 @@ const TAG_FILTERED_NOTE_LIST_HINTS: readonly HintEntry[] = [
   { key: 'Esc', desc: 'back' },
 ];
 
-export function getHintsForScreen(screen: ScreenName, focus?: FocusArea, tag?: string): readonly HintEntry[] {
+export function getHintsForScreen(screen: ScreenName, _focus?: FocusArea, tag?: string): readonly HintEntry[] {
   if (screen === 'noteList' && tag !== undefined) return TAG_FILTERED_NOTE_LIST_HINTS;
-  const base = HINTS[screen];
-  if (screen !== 'editor' || !focus) return base;
-
-  const inHeader = focus === 'headerTitle' || focus === 'headerTags';
-  const inTree = focus === 'fileTree';
-  if (!inHeader && !inTree) return base;
-
-  // Swap "Esc: back" → "Esc: editor" when not in editor body
-  const swapped = base.map((entry) =>
-    entry.key === 'Esc' ? { key: 'Esc', desc: 'editor' } : entry,
-  );
-
-  if (focus === 'headerTitle') {
-    return [{ key: 'Enter', desc: 'done' }, ...swapped];
-  }
-
-  return swapped;
+  return HINTS[screen];
 }
 
 export function formatHintEntry(entry: HintEntry): string {

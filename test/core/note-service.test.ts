@@ -280,6 +280,60 @@ describe('NoteService', () => {
     });
   });
 
+  // ─── updateIndex ────────────────────────────────────────────────
+
+  describe('updateIndex', () => {
+    it('updates tags in search index without reading from disk', async () => {
+      const note = await service.create({ title: 'Index Me', tags: ['old'], content: 'Index content.' });
+
+      service.updateIndex({
+        filePath: note.filePath,
+        title: 'Index Me',
+        tags: ['old', 'newtag'],
+        content: 'Index content.',
+        created: note.meta.created,
+        modified: new Date().toISOString(),
+      });
+
+      const tags = service.listTags();
+      expect(tags).toContainEqual(expect.objectContaining({ tag: 'newtag' }));
+    });
+
+    it('makes new tags immediately findable via listByTag', async () => {
+      const note = await service.create({ title: 'Tag Test', tags: [], content: 'Tag test content.' });
+
+      service.updateIndex({
+        filePath: note.filePath,
+        title: 'Tag Test',
+        tags: ['fresh'],
+        content: 'Tag test content.',
+        created: note.meta.created,
+        modified: new Date().toISOString(),
+      });
+
+      const hits = service.listByTag('fresh');
+      expect(hits).toHaveLength(1);
+      expect(hits[0]!.title).toBe('Tag Test');
+    });
+
+    it('updates wiki links in index', async () => {
+      const note = await service.create({ title: 'Linker', tags: [], content: 'No links yet.' });
+
+      service.updateIndex({
+        filePath: note.filePath,
+        title: 'Linker',
+        tags: [],
+        content: 'Now links to [[target-note]].',
+        created: note.meta.created,
+        modified: new Date().toISOString(),
+      });
+
+      const backlinks = service.getBacklinks('target-note');
+      expect(backlinks).toHaveLength(1);
+      expect(backlinks[0]!.sourceTitle).toBe('Linker');
+    });
+  });
+
   it('updates backlinks when content changes via reindex', async () => {
     const target = await service.create({
       title: 'Link Target',
