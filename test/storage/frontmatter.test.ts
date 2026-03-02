@@ -137,4 +137,50 @@ describe('serializeFrontmatter', () => {
     expect(parsed.meta.tags).toEqual(['日本語', 'test']);
     expect(parsed.content).toContain('本文のテスト。');
   });
+
+  it('safely handles YAML injection in title (colons, newlines)', () => {
+    const meta = {
+      title: 'evil: title\ninjected: true',
+      tags: ['safe'] as readonly string[],
+      created: '2026-02-27T10:00:00+09:00',
+      modified: '2026-02-27T10:00:00+09:00',
+    };
+
+    const serialized = serializeFrontmatter(meta, 'Body');
+    const parsed = parseFrontmatter(serialized);
+
+    expect(parsed.meta.title).toBe('evil: title\ninjected: true');
+    expect(parsed.meta.tags).toEqual(['safe']);
+  });
+
+  it('safely handles YAML injection in tags', () => {
+    const meta = {
+      title: 'Normal',
+      tags: ['tag: with colon', 'tag\nwith newline'] as readonly string[],
+      created: '2026-02-27T10:00:00+09:00',
+      modified: '2026-02-27T10:00:00+09:00',
+    };
+
+    const serialized = serializeFrontmatter(meta, 'Body');
+    const parsed = parseFrontmatter(serialized);
+
+    expect(parsed.meta.title).toBe('Normal');
+    expect(parsed.meta.tags).toContain('tag: with colon');
+    expect(parsed.meta.tags).toContain('tag\nwith newline');
+  });
+
+  it('round-trips created timestamp with special characters', () => {
+    const meta = {
+      title: 'Timestamp Test',
+      tags: [] as readonly string[],
+      created: '2026-02-27T10:00:00+09:00',
+      modified: '2026-02-27T14:00:00+09:00',
+    };
+
+    const serialized = serializeFrontmatter(meta, 'Content');
+    const parsed = parseFrontmatter(serialized);
+
+    expect(parsed.meta.created).toBe('2026-02-27T10:00:00+09:00');
+    expect(parsed.meta.modified).toBe('2026-02-27T14:00:00+09:00');
+  });
 });

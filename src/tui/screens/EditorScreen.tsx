@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { serializeFrontmatter } from '../../storage/frontmatter.js';
 import { BufferManager } from '../editor/buffer-manager.js';
 import { highlightLines } from '../editor/syntax-highlighter.js';
 import { renderViewport } from '../editor/renderer.js';
@@ -336,18 +337,10 @@ export function EditorScreen({
 
     try {
       const now = new Date().toISOString();
-      // C-3: Escape title and tags for safe YAML output
-      const safeTitle = yamlQuote(headerTitle);
-      const safeTags = headerTags.map((t) => yamlQuote(t));
-      const fullContent = [
-        '---',
-        `title: ${safeTitle}`,
-        `tags: [${safeTags.join(', ')}]`,
-        `created: ${active.meta.created}`,
-        `modified: ${now}`,
-        '---',
+      const fullContent = serializeFrontmatter(
+        { title: headerTitle, tags: [...headerTags], created: active.meta.created, modified: now },
         contentSnapshot,
-      ].join('\n');
+      );
 
       // C-2: Write temp file in same directory as target with random name and restrictive mode
       const targetDir = dirname(active.filePath);
