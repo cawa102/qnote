@@ -1,5 +1,6 @@
 import stringWidth from 'string-width';
 import type { CursorPosition, Selection } from './types.js';
+import { normalizeSelection } from './selection-utils.js';
 
 const SCROLL_MARGIN = 3;
 
@@ -172,7 +173,7 @@ export function applySelectionHighlight(
     return highlightedLine;
   }
 
-  const [start, end] = normalizeSelectionPos(selection.anchor, selection.head);
+  const [start, end] = normalizeSelection(selection.anchor, selection.head);
 
   // Empty selection
   if (start.line === end.line && start.col === end.col) {
@@ -239,19 +240,6 @@ export function applySelectionHighlight(
   }
 
   return result;
-}
-
-function normalizeSelectionPos(
-  anchor: CursorPosition,
-  head: CursorPosition,
-): [CursorPosition, CursorPosition] {
-  if (
-    anchor.line < head.line ||
-    (anchor.line === head.line && anchor.col <= head.col)
-  ) {
-    return [anchor, head];
-  }
-  return [head, anchor];
 }
 
 /**

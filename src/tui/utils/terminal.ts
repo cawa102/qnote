@@ -8,15 +8,3 @@ export function restoreTerminal(): void {
   process.stdout.write('\x1b[0m\x1b[?1049l\x1b[?25h');
 }
 
-/**
- * Extract the slug (filename without .md extension) from a file path.
- */
-export function extractSlugFromPath(filePath: string): string {
-  if (filePath === '') return '';
-
-  const basename = filePath.split('/').pop() ?? '';
-  if (basename.endsWith('.md')) {
-    return basename.slice(0, -3);
-  }
-  return basename;
-}

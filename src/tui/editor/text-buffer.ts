@@ -1,4 +1,5 @@
 import type { CursorPosition, Selection, TextBufferState, UndoEntry } from './types.js';
+import { normalizeSelection } from './selection-utils.js';
 
 const UNDO_LIMIT = 100;
 
@@ -824,15 +825,3 @@ function replaceLineAt(
   return [...lines.slice(0, index), newLine, ...lines.slice(index + 1)];
 }
 
-function normalizeSelection(
-  anchor: CursorPosition,
-  head: CursorPosition,
-): [CursorPosition, CursorPosition] {
-  if (
-    anchor.line < head.line ||
-    (anchor.line === head.line && anchor.col <= head.col)
-  ) {
-    return [anchor, head];
-  }
-  return [head, anchor];
-}

@@ -128,7 +128,7 @@ export function handleTreeKey(
 /**
  * Immutably toggle the expanded state of a directory node in the tree.
  */
-export function toggleTreeNode(root: FileTreeNode, targetPath: string): FileTreeNode {
+function toggleTreeNode(root: FileTreeNode, targetPath: string): FileTreeNode {
   if (root.path === targetPath && root.type === 'directory') {
     return { ...root, expanded: !root.expanded };
   }
@@ -144,38 +144,11 @@ export function toggleTreeNode(root: FileTreeNode, targetPath: string): FileTree
  * Determine the next focus area when a Ctrl key is pressed for header editing.
  * Returns null if the key doesn't correspond to a header focus action.
  */
-/**
- * Pure function: determine buffer switch direction from Ctrl+Arrow key press.
- */
-export function handleCtrlArrow(key: { rightArrow: boolean; leftArrow: boolean }): 'next' | 'prev' | null {
-  if (key.rightArrow) return 'next';
-  if (key.leftArrow) return 'prev';
-  return null;
-}
-
 export function getNextHeaderFocus(current: FocusArea, key: string): FocusArea | null {
   if (current === 'fileTree') return null;
   if (key === 't') return 'headerTitle';
   if (key === 'g') return 'headerTags';
   return null;
-}
-
-/**
- * Escape a string for safe inclusion in YAML scalar values.
- * Wraps in double quotes and escapes internal special characters.
- */
-export function yamlQuote(value: string): string {
-  // If the value contains characters that could be interpreted as YAML
-  // special syntax, wrap it in double quotes with proper escaping.
-  if (/[:{}\[\],&*?|>!%#@`"'\n\r\\]/.test(value) || value.trim() !== value) {
-    const escaped = value
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r');
-    return `"${escaped}"`;
-  }
-  return value;
 }
 
 export function EditorScreen({

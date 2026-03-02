@@ -36,14 +36,6 @@ export interface BacklinkHit {
   readonly targetText: string;
 }
 
-// ─── CJK detection ────────────────────────────────────────────────
-
-const CJK_REGEX = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-
-function containsCJK(text: string): boolean {
-  return CJK_REGEX.test(text);
-}
-
 // ─── SearchIndex ───────────────────────────────────────────────────
 
 export class SearchIndex {
@@ -148,17 +140,8 @@ export class SearchIndex {
   // ─── Search ─────────────────────────────────────────────────────
 
   shouldSearch(query: string): boolean {
-    const trimmed = query.trim();
-    if (trimmed.length === 0) {
-      return false;
-    }
-
-    // Trigram tokenizer requires 3+ characters for all scripts
-    if (containsCJK(trimmed)) {
-      return trimmed.length >= 3;
-    }
-
-    return trimmed.length >= 3;
+    // Trigram tokenizer requires 3+ characters for all scripts (including CJK)
+    return query.trim().length >= 3;
   }
 
   search(query: string): SearchHit[] {

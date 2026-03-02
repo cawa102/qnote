@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { restoreTerminal, extractSlugFromPath } from '../../src/tui/utils/terminal.js';
+import { restoreTerminal } from '../../src/tui/utils/terminal.js';
 
 describe('restoreTerminal', () => {
   it('includes ANSI reset sequence to clear all attributes', () => {
@@ -45,28 +45,3 @@ describe('restoreTerminal', () => {
   });
 });
 
-describe('extractSlugFromPath', () => {
-  it('extracts slug from a simple markdown file path', () => {
-    expect(extractSlugFromPath('/home/user/notes/hello-world.md')).toBe('hello-world');
-  });
-
-  it('extracts slug from a nested path', () => {
-    expect(extractSlugFromPath('/home/user/notes/daily/2026-02-27.md')).toBe('2026-02-27');
-  });
-
-  it('extracts slug from Japanese filename', () => {
-    expect(extractSlugFromPath('/notes/メモ帳.md')).toBe('メモ帳');
-  });
-
-  it('handles path without .md extension', () => {
-    expect(extractSlugFromPath('/notes/readme.txt')).toBe('readme.txt');
-  });
-
-  it('handles filename-only path', () => {
-    expect(extractSlugFromPath('my-note.md')).toBe('my-note');
-  });
-
-  it('returns empty string for empty path', () => {
-    expect(extractSlugFromPath('')).toBe('');
-  });
-});
