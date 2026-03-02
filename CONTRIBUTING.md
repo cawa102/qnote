@@ -63,7 +63,7 @@ src/tui/            → Ink 5 + React 18 TUI
   hooks/            → 7 hooks (navigation, input-mode, global-keys, layout, layout-context, debounce, viewport)
   editor/           → Editor engine (text-buffer, text-editor, buffer-manager, clipboard, syntax, renderer, file-tree)
 src/core/           → Business logic (NoteService, ConfigService)
-src/storage/        → Persistence (NoteRepository, SearchIndex FTS5, file-scanner, frontmatter, link-parser)
+src/storage/        → Persistence (NoteRepository, SearchIndex FTS5, file-scanner, frontmatter, link-parser, path-utils)
 src/theme/          → Semantic colors + formatting
 src/types.ts        → Shared types and error hierarchy
 ```
@@ -75,6 +75,7 @@ src/types.ts        → Shared types and error hierarchy
 - **No mutation**: State updates return new objects (TextBuffer, BufferManager, Clipboard)
 - **Source of truth**: Markdown files on disk; SQLite is rebuildable via `qnote reindex`
 - **Atomic writes**: temp file → `rename()` to prevent data loss
+- **Path confinement**: All file I/O validated via `assertPathWithinRoot()` to prevent traversal attacks
 
 ## Commit Messages
 
