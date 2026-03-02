@@ -16,3 +16,6 @@ codemaps/
 
 # Temporary files
 tmp-*
+
+# Environment variables
+.env*
