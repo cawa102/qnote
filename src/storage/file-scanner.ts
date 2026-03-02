@@ -2,6 +2,7 @@
 
 import { readdir, realpath, stat } from 'fs/promises';
 import { join, relative, resolve } from 'path';
+import { isWithinRoot } from './path-utils.js';
 
 export interface ScanOptions {
   readonly excludeDirs?: readonly string[];
@@ -14,24 +15,15 @@ export interface ScannedFile {
 
 const DEFAULT_EXCLUDE_DIRS: readonly string[] = ['.git', '.qnote', 'node_modules'];
 
-/**
- * Check if a resolved path is within the root directory.
- * Uses prefix + separator to prevent /notes-evil matching /notes.
- */
-function isWithinRoot(resolvedPath: string, rootPrefix: string): boolean {
-  return resolvedPath.startsWith(rootPrefix) || resolvedPath === rootPrefix.slice(0, -1);
-}
-
 export async function scanNoteFiles(
   notesDir: string,
   options?: ScanOptions,
 ): Promise<readonly ScannedFile[]> {
   const realRootPath = await realpath(resolve(notesDir));
-  const rootPrefix = realRootPath.endsWith('/') ? realRootPath : `${realRootPath}/`;
   const excludeSet = buildExcludeSet(options?.excludeDirs);
   const results: ScannedFile[] = [];
 
-  await scanDirectory(realRootPath, rootPrefix, excludeSet, results);
+  await scanDirectory(realRootPath, realRootPath, excludeSet, results);
 
   results.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 
@@ -52,7 +44,7 @@ function buildExcludeSet(
 
 async function scanDirectory(
   dirPath: string,
-  rootPrefix: string,
+  realRootPath: string,
   excludeSet: ReadonlySet<string>,
   results: ScannedFile[],
 ): Promise<void> {
@@ -84,7 +76,7 @@ async function scanDirectory(
     try {
       if (entry.isSymbolicLink()) {
         const realTarget = await realpath(entryPath);
-        if (!isWithinRoot(realTarget, rootPrefix)) {
+        if (!isWithinRoot(realTarget, realRootPath)) {
           continue;
         }
         const targetStat = await stat(entryPath);
@@ -92,7 +84,7 @@ async function scanDirectory(
         isFile = targetStat.isFile();
       } else {
         const realEntryPath = await realpath(entryPath);
-        if (!isWithinRoot(realEntryPath, rootPrefix)) {
+        if (!isWithinRoot(realEntryPath, realRootPath)) {
           continue;
         }
         isDir = entry.isDirectory();
@@ -104,10 +96,9 @@ async function scanDirectory(
     }
 
     if (isDir) {
-      await scanDirectory(entryPath, rootPrefix, excludeSet, results);
+      await scanDirectory(entryPath, realRootPath, excludeSet, results);
     } else if (isFile && entry.name.endsWith('.md')) {
-      const rootDir = rootPrefix.endsWith('/') ? rootPrefix.slice(0, -1) : rootPrefix;
-      const relativePath = relative(rootDir, entryPath);
+      const relativePath = relative(realRootPath, entryPath);
       results.push({
         relativePath,
         absolutePath: entryPath,

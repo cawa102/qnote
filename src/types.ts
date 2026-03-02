@@ -116,6 +116,21 @@ export class TitleTooLongError extends AppError {
   }
 }
 
+export class PathTraversalError extends AppError {
+  readonly filePath: string;
+  readonly rootDir: string;
+
+  constructor(filePath: string, rootDir: string) {
+    super(
+      `Path traversal denied: ${filePath} is outside root ${rootDir}`,
+      'PATH_TRAVERSAL',
+    );
+    this.filePath = filePath;
+    this.rootDir = rootDir;
+    this.name = 'PathTraversalError';
+  }
+}
+
 // --- Data types ---
 
 export interface NoteMeta {
