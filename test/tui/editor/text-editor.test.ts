@@ -23,6 +23,42 @@ describe('TextEditorController', () => {
       expect(ctrl.getContent()).toBe('hello');
       expect(ctrl.isDirty()).toBe(false);
     });
+
+    it('creates with cursor at position 0,0 by default', () => {
+      const ctrl = TextEditorController.create('hello\nworld');
+      const state = ctrl.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 0, col: 0 });
+    });
+  });
+
+  describe('createWithCursorAtEnd', () => {
+    it('creates with cursor at end of content', () => {
+      const ctrl = TextEditorController.createWithCursorAtEnd('# Title\n\n');
+      const state = ctrl.getBuffer().getState();
+      // Content: "# Title", "", "" (3 lines from split on "# Title\n\n")
+      expect(state.cursor).toEqual({ line: 2, col: 0 });
+      expect(ctrl.getContent()).toBe('# Title\n\n');
+      expect(ctrl.isDirty()).toBe(false);
+    });
+
+    it('places cursor at end of last line for single-line content', () => {
+      const ctrl = TextEditorController.createWithCursorAtEnd('hello');
+      const state = ctrl.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 0, col: 5 });
+    });
+
+    it('places cursor at end for multi-line content', () => {
+      const ctrl = TextEditorController.createWithCursorAtEnd('line1\nline2\nline3');
+      const state = ctrl.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 2, col: 5 });
+    });
+
+    it('handles empty string content', () => {
+      const ctrl = TextEditorController.createWithCursorAtEnd('');
+      const state = ctrl.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 0, col: 0 });
+      expect(ctrl.isDirty()).toBe(false);
+    });
   });
 
   describe('plain character input', () => {

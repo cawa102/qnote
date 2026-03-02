@@ -40,6 +40,34 @@ describe('BufferManager', () => {
       expect(mgr.getBufferInfos()).toHaveLength(2);
     });
 
+    it('opens buffer with cursor at end when cursorAtEnd is true', () => {
+      const content = '# Title\n\n';
+      const mgr = BufferManager.create()
+        .openBuffer('/notes/new.md', content, makeMeta('Title'), true);
+      const active = mgr.getActive();
+      expect(active).not.toBeNull();
+      const state = active!.editor.getBuffer().getState();
+      // "# Title\n\n" splits into ["# Title", "", ""] — cursor at line 2, col 0
+      expect(state.cursor).toEqual({ line: 2, col: 0 });
+    });
+
+    it('opens buffer with cursor at start when cursorAtEnd is false', () => {
+      const content = '# Title\n\nSome text';
+      const mgr = BufferManager.create()
+        .openBuffer('/notes/existing.md', content, makeMeta('Title'), false);
+      const active = mgr.getActive();
+      const state = active!.editor.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 0, col: 0 });
+    });
+
+    it('ignores cursorAtEnd when buffer is already open', () => {
+      const mgr = BufferManager.create()
+        .openBuffer('/notes/a.md', '# Title\n\n', makeMeta('Title'), false)
+        .openBuffer('/notes/a.md', '# Title\n\n', makeMeta('Title'), true);
+      const state = mgr.getActive()!.editor.getBuffer().getState();
+      expect(state.cursor).toEqual({ line: 0, col: 0 });
+    });
+
     it('tracks multiple buffers', () => {
       const mgr = BufferManager.create()
         .openBuffer('/notes/a.md', 'aaa', makeMeta('A'))

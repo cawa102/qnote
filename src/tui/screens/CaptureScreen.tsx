@@ -77,7 +77,7 @@ export function CaptureScreen({
       .then((note) => {
         if (openEditor) {
           nav.pop();
-          nav.push('editor', { filePath: note.filePath });
+          nav.push('editor', { filePath: note.filePath, cursorAtEnd: true });
         } else {
           setSaved(true);
           setTimeout(() => nav.pop(), 600);

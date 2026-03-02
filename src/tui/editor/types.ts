@@ -31,6 +31,7 @@ export interface BufferInfo {
 export interface EditorScreenParams {
   readonly filePath?: string;
   readonly showFileTree?: boolean;
+  readonly cursorAtEnd?: boolean;
 }
 
 export type EditorMode = 'edit' | 'preview';

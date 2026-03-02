@@ -30,6 +30,7 @@ interface EditorScreenProps {
   readonly inputMode: InputModeStore;
   readonly initialFilePath?: string;
   readonly showFileTree?: boolean;
+  readonly cursorAtEnd?: boolean;
 }
 
 const MIN_TREE_WIDTH = 15;
@@ -184,6 +185,7 @@ export function EditorScreen({
   inputMode,
   initialFilePath,
   showFileTree: initialShowFileTree,
+  cursorAtEnd,
 }: EditorScreenProps): React.ReactElement {
   const { contentWidth, rows } = useLayoutContext();
 
@@ -229,6 +231,7 @@ export function EditorScreen({
           note.filePath,
           note.content,
           note.meta,
+          cursorAtEnd,
         ));
         setHeaderTitle(note.meta.title);
         setHeaderTags(note.meta.tags);

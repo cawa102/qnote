@@ -100,7 +100,7 @@ function AppContent({
               content: `# ${title}\n\n`,
             })
             .then((note) => {
-              navStore.push('editor', { filePath: note.filePath });
+              navStore.push('editor', { filePath: note.filePath, cursorAtEnd: true });
             })
             .catch(() => {
               // Collision or validation error — stay on palette
@@ -127,7 +127,7 @@ function AppContent({
                   directory: 'daily',
                 })
                 .then((note) => {
-                  navStore.push('editor', { filePath: note.filePath });
+                  navStore.push('editor', { filePath: note.filePath, cursorAtEnd: true });
                 })
                 .catch(() => {
                   // Collision or validation error — stay on palette
@@ -271,6 +271,7 @@ function AppContent({
                 inputMode={inputModeStore}
                 initialFilePath={currentEntry.filePath}
                 showFileTree={currentEntry.showFileTree}
+                cursorAtEnd={currentEntry.cursorAtEnd}
               />
             )}
           </Box>

@@ -22,14 +22,16 @@ export class BufferManager {
     return new BufferManager([], null);
   }
 
-  openBuffer(filePath: string, content: string, meta: NoteMeta): BufferManager {
+  openBuffer(filePath: string, content: string, meta: NoteMeta, cursorAtEnd?: boolean): BufferManager {
     // If already open, just focus it
     const existing = this._buffers.find((b) => b.id === filePath);
     if (existing) {
       return new BufferManager(this._buffers, filePath);
     }
 
-    const editor = TextEditorController.create(content);
+    const editor = cursorAtEnd
+      ? TextEditorController.createWithCursorAtEnd(content)
+      : TextEditorController.create(content);
     const entry: BufferEntry = {
       id: filePath,
       filePath,

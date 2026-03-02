@@ -27,6 +27,11 @@ export class TextEditorController {
     return new TextEditorController(buffer, false, initialContent);
   }
 
+  static createWithCursorAtEnd(initialContent: string): TextEditorController {
+    const buffer = TextBuffer.create(initialContent).moveToDocEnd();
+    return new TextEditorController(buffer, false, initialContent);
+  }
+
   handleInput(input: string, keyInfo: KeyInfo): TextEditorController {
     const newBuffer = this._dispatch(input, keyInfo);
     if (newBuffer === this._buffer) {

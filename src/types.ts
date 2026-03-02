@@ -193,7 +193,7 @@ export type ScreenEntry =
   | { readonly screen: 'findFile' }
   | { readonly screen: 'search'; readonly initialQuery?: string }
   | { readonly screen: 'capture' }
-  | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean }
+  | { readonly screen: 'editor'; readonly filePath?: string; readonly showFileTree?: boolean; readonly cursorAtEnd?: boolean }
   | { readonly screen: 'tagList' };
 
 export interface NavigationState {
