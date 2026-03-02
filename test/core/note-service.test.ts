@@ -266,7 +266,7 @@ describe('NoteService', () => {
 
     it('throws NoteNotFoundError if note does not exist', async () => {
       await expect(
-        service.renameTagForNote('/nonexistent/path.md', 'old', 'new'),
+        service.renameTagForNote(join(tempDir, 'nonexistent.md'), 'old', 'new'),
       ).rejects.toThrow('Note not found');
     });
 
