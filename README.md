@@ -18,6 +18,10 @@ AI-friendly terminal-native note-taking app working fully localy. Your notes are
 - **AI-friendly** — Claude Code and other AI tools can directly read/grep/glob your notes. MCP server supported.
 - **Local-first** — All data stays on your machine. No account, no cloud, no vendor lock-in.
 
+## Demo
+
+https://github.com/user-attachments/assets/5e6b66f6-c147-49fa-b139-1da1b5444251
+
 ## Installation
 
 ```bash
