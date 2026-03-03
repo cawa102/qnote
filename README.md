@@ -20,7 +20,7 @@ AI-friendly terminal-native note-taking app working fully localy. Your notes are
 
 ## Demo
 
-https://github.com/user-attachments/assets/5e6b66f6-c147-49fa-b139-1da1b5444251
+https://github.com/user-attachments/assets/5be71fc8-33c8-4b69-98da-e7e9d8c39b34
 
 ## Installation
 
