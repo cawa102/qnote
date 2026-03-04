@@ -1,4 +1,11 @@
 # Queen Note (qnote)
+
+[![npm version](https://img.shields.io/npm/v/qnote)](https://www.npmjs.com/package/qnote)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6.svg)](https://www.typescriptlang.org/)
+[![Test Coverage](https://img.shields.io/badge/coverage-93%25%2B-brightgreen.svg)](https://github.com/cawa102/qnote)
+
 ```
  ██████╗ ██╗   ██╗███████╗███████╗███╗   ██╗     ███╗   ██╗ ██████╗ ████████╗███████╗
 ██╔═══██╗██║   ██║██╔════╝██╔════╝████╗  ██║     ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
