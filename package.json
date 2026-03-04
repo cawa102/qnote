@@ -21,6 +21,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "files": [
+    "dist/",
+    "!dist/**/*.map",
+    "LICENSE",
+    "README.md"
+  ],
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
     "better-sqlite3": "^12.6.2",
